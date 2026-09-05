@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react'
 import {
   ArrowRight, Cable, ChevronRight, CircleGauge, FileText,
-  Layers3, Mail, MapPin, Network, PackageSearch, Phone, Send, SlidersHorizontal,
+  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, Send, SlidersHorizontal,
 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, type AdminPage, type PageLocaleContent, type Product, type ProductCategory } from '../api'
@@ -9,23 +9,32 @@ import { company, type Locale, type SiteCopy } from '../content'
 
 const directionIcons = [Cable, SlidersHorizontal, CircleGauge, Network]
 
-function useManagedPage(slug: string, locale: Locale) {
+function setDocumentMeta(title: string, description: string) {
+  document.title = `${title} | ABCN`
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+  if (meta) meta.content = description
+}
+
+function useManagedPage(slug: string, locale: Locale, fallbackTitle: string, fallbackDescription: string) {
   const [page, setPage] = useState<AdminPage | null>(null)
 
   useEffect(() => {
     let active = true
+    setDocumentMeta(fallbackTitle, fallbackDescription)
     api.getPublicPage(slug).then((result) => {
       if (!active) return
       setPage(result)
       const meta = result.meta?.[locale]
-      if (meta?.title) document.title = `${meta.title} | ABCN`
-      const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')
-      if (description && meta?.description) description.content = meta.description
+      setDocumentMeta(meta?.title || fallbackTitle, meta?.description || fallbackDescription)
     }).catch(() => undefined)
     return () => { active = false }
-  }, [locale, slug])
+  }, [fallbackDescription, fallbackTitle, locale, slug])
 
   return (page?.content[locale] ?? {}) as Partial<PageLocaleContent>
+}
+
+function flattenCategories(categories: ProductCategory[]): ProductCategory[] {
+  return categories.flatMap((category) => [category, ...flattenCategories(category.children ?? [])])
 }
 
 function productAssetUrl(product: Product) {
@@ -67,7 +76,7 @@ function ClosingCta({ copy }: { copy: SiteCopy }) {
 }
 
 export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
-  const managed = useManagedPage('home', locale)
+  const managed = useManagedPage('home', locale, copy.hero.title, copy.hero.body)
   return (
     <>
       <section className="home-hero">
@@ -157,7 +166,7 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
 }
 
 export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
-  const managed = useManagedPage('about', locale)
+  const managed = useManagedPage('about', locale, copy.about.title, copy.about.lead)
   return (
     <>
       <PageHero eyebrow={managed.eyebrow || copy.about.eyebrow} title={managed.title || copy.about.title} lead={managed.lead || copy.about.lead} />
@@ -201,7 +210,7 @@ export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) 
 }
 
 export function SolutionsPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
-  const managed = useManagedPage('solutions', locale)
+  const managed = useManagedPage('solutions', locale, copy.solutionsPage.title, copy.solutionsPage.lead)
   return (
     <>
       <PageHero eyebrow={managed.eyebrow || copy.solutionsPage.eyebrow} title={managed.title || copy.solutionsPage.title} lead={managed.lead || copy.solutionsPage.lead} />
@@ -231,22 +240,52 @@ export function SolutionsPage({ copy, locale }: { copy: SiteCopy; locale: Locale
 }
 
 export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
-  const managed = useManagedPage('products', locale)
+  const managed = useManagedPage('products', locale, copy.productsPage.title, copy.productsPage.lead)
   const icons = [Layers3, SlidersHorizontal, FileText, Send]
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [catalogError, setCatalogError] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [lastPage, setLastPage] = useState(1)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let active = true
     Promise.all([api.getPublicProducts(), api.getPublicCategories()]).then(([productData, categoryData]) => {
       if (!active) return
       setProducts(productData.data)
-      setCategories(categoryData)
-    }).catch(() => undefined).finally(() => { if (active) setLoading(false) })
+      setCategories(flattenCategories(categoryData))
+      setCurrentPage(productData.current_page)
+      setLastPage(productData.last_page)
+    }).catch(() => { if (active) setCatalogError(true) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [reloadKey])
+
+  function retryCatalog() {
+    setLoading(true)
+    setCatalogError(false)
+    setProducts([])
+    setReloadKey((value) => value + 1)
+  }
+
+  async function loadMore() {
+    if (loadingMore || currentPage >= lastPage) return
+    setLoadingMore(true)
+    setCatalogError(false)
+    try {
+      const result = await api.getPublicProducts(currentPage + 1)
+      setProducts((current) => [...current, ...result.data])
+      setCurrentPage(result.current_page)
+      setLastPage(result.last_page)
+    } catch {
+      setCatalogError(true)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const visibleProducts = selectedCategory ? products.filter((product) => product.product_category_id === selectedCategory) : products
   return (
@@ -254,11 +293,17 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
       <PageHero eyebrow={managed.eyebrow || copy.productsPage.eyebrow} title={managed.title || copy.productsPage.title} lead={managed.lead || copy.productsPage.lead} />
       <section className="section products-preview">
         <div className="container">
-          {loading && <div className="catalog-status"><span className="status-dot" />{locale === 'hy' ? 'Կատալոգը բեռնվում է…' : 'Loading catalog…'}</div>}
+          {loading && <div className="catalog-loading" role="status"><LoaderCircle />{locale === 'hy' ? 'Կատալոգը բեռնվում է…' : 'Loading catalog…'}</div>}
+          {!loading && catalogError && products.length === 0 ? <div className="catalog-message" role="alert">
+            <PackageSearch />
+            <h2>{locale === 'hy' ? 'Կատալոգը ժամանակավորապես հասանելի չէ' : 'The catalog is temporarily unavailable'}</h2>
+            <p>{locale === 'hy' ? 'Փորձեք կրկին կամ կապվեք մեզ հետ՝ ապրանքի մասին տեղեկություն ստանալու համար։' : 'Try again or contact us for product information.'}</p>
+            <button className="button button-outline-blue" type="button" onClick={retryCatalog}><RotateCw />{locale === 'hy' ? 'Փորձել կրկին' : 'Try again'}</button>
+          </div> : null}
           {!loading && products.length > 0 ? <>
             <div className="catalog-filters">
               <button className={selectedCategory === null ? 'active' : ''} onClick={() => setSelectedCategory(null)}>{locale === 'hy' ? 'Բոլորը' : 'All products'}</button>
-              {categories.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name}</button>)}
+              {categories.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.parent_id ? '— ' : ''}{category.translations[locale]?.name || category.translations.en.name}</button>)}
             </div>
             {visibleProducts.length ? <div className="public-product-grid">{visibleProducts.map((product) => {
               const translation = product.translations[locale] ?? product.translations.en
@@ -268,7 +313,9 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
                 <div className="public-product-copy"><small>{product.category?.translations?.[locale]?.name || product.sku}</small><h2>{translation.name}</h2><p>{translation.description}</p><strong>{locale === 'hy' ? 'Տեսնել մանրամասները' : 'View details'}<ArrowRight /></strong></div>
               </Link>
             })}</div> : <div className="catalog-empty">{locale === 'hy' ? 'Այս կատեգորիայում ապրանք դեռ չկա։' : 'There are no products in this category yet.'}</div>}
-          </> : !loading && <>
+            {currentPage < lastPage ? <button className="button catalog-more" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle className="spin" /> : null}{loadingMore ? (locale === 'hy' ? 'Բեռնվում է…' : 'Loading…') : (locale === 'hy' ? 'Ցույց տալ ավելին' : 'Show more')}</button> : null}
+            {catalogError ? <p className="catalog-inline-error" role="alert">{locale === 'hy' ? 'Հաջորդ ապրանքները չբեռնվեցին։ Փորձեք կրկին։' : 'More products could not be loaded. Please try again.'}</p> : null}
+          </> : !loading && !catalogError && <>
             <div className="catalog-status"><span className="status-dot" />{copy.productsPage.status}</div>
             <div className="product-feature-grid">
             {copy.productsPage.features.map(([title, text], index) => {
@@ -296,7 +343,16 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
     return () => { active = false }
   }, [slug])
 
-  if (loading) return <section className="section"><div className="container catalog-empty">{locale === 'hy' ? 'Ապրանքը բեռնվում է…' : 'Loading product…'}</div></section>
+  useEffect(() => {
+    if (!product) {
+      setDocumentMeta(copy.productsPage.title, copy.productsPage.lead)
+      return
+    }
+    const translation = product.translations[locale] ?? product.translations.en
+    setDocumentMeta(translation.name, translation.description || copy.productsPage.lead)
+  }, [copy.productsPage.lead, copy.productsPage.title, locale, product])
+
+  if (loading) return <section className="section"><div className="container catalog-loading" role="status"><LoaderCircle />{locale === 'hy' ? 'Ապրանքը բեռնվում է…' : 'Loading product…'}</div></section>
   if (!product) return <section className="section"><div className="container catalog-empty"><h1>{locale === 'hy' ? 'Ապրանքը չի գտնվել' : 'Product not found'}</h1><Link className="text-link" to="/products">{locale === 'hy' ? 'Վերադառնալ կատալոգ' : 'Back to catalog'}</Link></div></section>
 
   const translation = product.translations[locale] ?? product.translations.en
@@ -318,7 +374,7 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
 }
 
 export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
-  const managed = useManagedPage('contact', locale)
+  const managed = useManagedPage('contact', locale, copy.contact.title, copy.contact.lead)
   const [searchParams] = useSearchParams()
   const productName = searchParams.get('product')
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')

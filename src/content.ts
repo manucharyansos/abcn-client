@@ -31,6 +31,7 @@ export const content = {
     nav: {
       home: 'Home', about: 'About', solutions: 'Solutions', products: 'Products',
       contact: 'Contact', project: 'Discuss a project', menu: 'Open menu',
+      close: 'Close menu', label: 'Main navigation', skip: 'Skip to content',
     },
     hero: {
       eyebrow: 'ENGINEERING & ENERGY SOLUTIONS',
@@ -63,9 +64,9 @@ export const content = {
       ],
     },
     productsTeaser: {
-      eyebrow: 'PRODUCT CATALOG', title: 'The catalog is being prepared for the next stage.',
-      body: 'The product architecture is already built into the platform. Categories, technical specifications, documents and quote requests can be published from the administration panel when the verified product data is ready.',
-      action: 'View catalog structure',
+      eyebrow: 'PRODUCT CATALOG', title: 'A growing technical catalog for informed selection.',
+      body: 'Verified products will be added with clear categories, technical specifications and supporting documents. Until then, our team can help identify the right direction for your project.',
+      action: 'Explore the catalog',
     },
     cta: {
       eyebrow: 'START A CONVERSATION', title: 'Tell us what your project needs.',
@@ -88,24 +89,24 @@ export const content = {
     solutionsPage: {
       eyebrow: 'SOLUTIONS', title: 'Start from the challenge, not from a product list.',
       lead: 'The solution section is designed to connect a real project need with the relevant engineering direction, products and documentation.',
-      noteTitle: 'Prepared for expansion',
-      note: 'Each direction can later contain application scenarios, system diagrams, compatible products, completed projects and downloadable technical documents — all managed from the admin panel.',
+      noteTitle: 'Built for project-specific requirements',
+      note: 'Each direction can be developed around the application, operating environment and required result, with compatible equipment and technical documentation selected for the project.',
     },
     productsPage: {
       eyebrow: 'PRODUCTS', title: 'A technical catalog designed for informed selection.',
-      lead: 'Products will be published after the verified catalog data is provided. The platform is prepared for multi-level categories, specifications, certificates, manuals and quote requests.',
+      lead: 'Verified products will be grouped by category and supported with specifications, certificates, manuals and a direct path to request a quote.',
       status: 'Catalog content is being prepared',
       features: [
         ['Structured categories', 'Category, subcategory, series and model.'],
         ['Technical data', 'Comparable characteristics and application information.'],
         ['Documents', 'Catalogs, manuals, certificates and drawings.'],
-        ['Request list', 'Several products can be collected into one commercial inquiry without online payment.'],
+        ['Quote request', 'Ask for availability, selection support or a commercial offer without online payment.'],
       ],
       action: 'Ask about a product',
     },
     contact: {
       eyebrow: 'CONTACT', title: 'Let’s define the right next step.',
-      lead: 'Send a short description of your question or project. The request will appear directly in the ABCN administration panel.',
+      lead: 'Send a short description of your question or project. Our team will review it and contact you to clarify the next step.',
       formTitle: 'Project inquiry', name: 'Full name', company: 'Company', email: 'Email', phone: 'Phone',
       message: 'What can we help with?', submit: 'Send inquiry', sending: 'Sending…',
       success: 'Thank you. Your inquiry has been received.',
@@ -118,6 +119,7 @@ export const content = {
     nav: {
       home: 'Գլխավոր', about: 'Մեր մասին', solutions: 'Լուծումներ', products: 'Ապրանքներ',
       contact: 'Կապ', project: 'Քննարկել նախագիծը', menu: 'Բացել մենյուն',
+      close: 'Փակել մենյուն', label: 'Գլխավոր նավիգացիա', skip: 'Անցնել բովանդակությանը',
     },
     hero: {
       eyebrow: 'ԻՆԺԵՆԵՐԱԿԱՆ ԵՎ ԷՆԵՐԳԵՏԻԿ ԼՈՒԾՈՒՄՆԵՐ',
@@ -150,9 +152,9 @@ export const content = {
       ],
     },
     productsTeaser: {
-      eyebrow: 'ԱՊՐԱՆՔՆԵՐԻ ԿԱՏԱԼՈԳ', title: 'Կատալոգը պատրաստվում է հաջորդ փուլի համար։',
-      body: 'Ապրանքների ամբողջ կառուցվածքն արդեն նախատեսված է համակարգում։ Հաստատված տվյալները ստանալուց հետո ադմինկայից հնարավոր կլինի հրապարակել կատեգորիաներ, բնութագրեր, փաստաթղթեր և առաջարկի հարցումներ։',
-      action: 'Տեսնել կատալոգի կառուցվածքը',
+      eyebrow: 'ԱՊՐԱՆՔՆԵՐԻ ԿԱՏԱԼՈԳ', title: 'Թարմացվող տեխնիկական կատալոգ՝ հիմնավորված ընտրության համար։',
+      body: 'Հաստատված ապրանքները կավելացվեն հստակ կատեգորիաներով, տեխնիկական բնութագրերով և համապատասխան փաստաթղթերով։ Մինչ այդ մեր թիմը կօգնի ընտրել ձեր նախագծին համապատասխան ուղղությունը։',
+      action: 'Ծանոթանալ կատալոգին',
     },
     cta: {
       eyebrow: 'ՍԿՍԵՆՔ ՔՆՆԱՐԿՈՒՄԸ', title: 'Պատմեք՝ ինչ է անհրաժեշտ ձեր նախագծին։',
@@ -175,24 +177,24 @@ export const content = {
     solutionsPage: {
       eyebrow: 'ԼՈՒԾՈՒՄՆԵՐ', title: 'Սկսում ենք խնդրից, ոչ թե ապրանքների ցանկից։',
       lead: 'Լուծումների բաժինը նախագծված է իրական կարիքը համապատասխան ինժեներական ուղղության, ապրանքների և փաստաթղթերի հետ կապելու համար։',
-      noteTitle: 'Պատրաստ է ընդլայնման',
-      note: 'Յուրաքանչյուր ուղղության մեջ հետագայում կարող են լինել կիրառման սցենարներ, համակարգային սխեմաներ, համատեղելի ապրանքներ, նախագծեր և տեխնիկական փաստաթղթեր՝ ամբողջությամբ կառավարվող ադմինկայից։',
+      noteTitle: 'Նախատեսված է յուրաքանչյուր նախագծի պահանջների համար',
+      note: 'Յուրաքանչյուր ուղղություն ձևավորվում է կիրառության, շահագործման միջավայրի և ակնկալվող արդյունքի շուրջ՝ նախագծին համապատասխան սարքավորումներով ու տեխնիկական փաստաթղթերով։',
     },
     productsPage: {
       eyebrow: 'ԱՊՐԱՆՔՆԵՐ', title: 'Տեխնիկական կատալոգ՝ հիմնավորված ընտրության համար։',
-      lead: 'Ապրանքները կհրապարակվեն հաստատված տվյալները ստանալուց հետո։ Համակարգը պատրաստ է բազմաստիճան կատեգորիաների, բնութագրերի, սերտիֆիկատների, ձեռնարկների և գնային առաջարկի հարցումների համար։',
+      lead: 'Հաստատված ապրանքները կխմբավորվեն ըստ կատեգորիաների և կներկայացվեն բնութագրերով, սերտիֆիկատներով, ձեռնարկներով ու գնային առաջարկի հարցման հնարավորությամբ։',
       status: 'Կատալոգի բովանդակությունը պատրաստվում է',
       features: [
         ['Կառուցվածքային կատեգորիաներ', 'Կատեգորիա, ենթակատեգորիա, շարք և մոդել։'],
         ['Տեխնիկական տվյալներ', 'Համեմատելի բնութագրեր և կիրառման տեղեկություն։'],
         ['Փաստաթղթեր', 'Կատալոգներ, ձեռնարկներ, սերտիֆիկատներ և գծագրեր։'],
-        ['Հարցման ցուցակ', 'Մի քանի ապրանք կարող են միավորվել մեկ կոմերցիոն հարցման մեջ՝ առանց օնլայն վճարման։'],
+        ['Գնային առաջարկ', 'Հարցրեք առկայության, ընտրության կամ կոմերցիոն առաջարկի մասին՝ առանց օնլայն վճարման։'],
       ],
       action: 'Հարցնել ապրանքի մասին',
     },
     contact: {
       eyebrow: 'ԿԱՊ', title: 'Միասին հստակեցնենք ճիշտ հաջորդ քայլը։',
-      lead: 'Ուղարկեք ձեր հարցի կամ նախագծի կարճ նկարագրությունը։ Հարցումը անմիջապես կհայտնվի ABCN-ի ադմինկայում։',
+      lead: 'Ուղարկեք ձեր հարցի կամ նախագծի կարճ նկարագրությունը։ Մեր թիմը կուսումնասիրի այն և կկապվի ձեզ հետ՝ հաջորդ քայլը հստակեցնելու համար։',
       formTitle: 'Նախագծի հարցում', name: 'Անուն, ազգանուն', company: 'Ընկերություն', email: 'Էլ․ փոստ', phone: 'Հեռախոս',
       message: 'Ինչո՞վ կարող ենք օգնել', submit: 'Ուղարկել հարցումը', sending: 'Ուղարկվում է…',
       success: 'Շնորհակալություն։ Ձեր հարցումը ստացվել է։',

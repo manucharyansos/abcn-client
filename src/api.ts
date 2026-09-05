@@ -49,6 +49,7 @@ export type ProductCategory = {
   sort_order: number
   translations: { hy: { name: string }; en: { name: string } }
   parent?: { id: number; slug: string } | null
+  children?: ProductCategory[]
 }
 
 export type ProductTranslation = { name: string; description?: string }
