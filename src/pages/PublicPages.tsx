@@ -37,6 +37,10 @@ function flattenCategories(categories: ProductCategory[]): ProductCategory[] {
   return categories.flatMap((category) => [category, ...flattenCategories(category.children ?? [])])
 }
 
+function categoryBranchIds(category: ProductCategory): number[] {
+  return [category.id, ...(category.children ?? []).flatMap(categoryBranchIds)]
+}
+
 function productAssetUrl(product: Product) {
   return product.images?.[0]?.url ?? ''
 }
@@ -257,7 +261,7 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
     Promise.all([api.getPublicProducts(), api.getPublicCategories()]).then(([productData, categoryData]) => {
       if (!active) return
       setProducts(productData.data)
-      setCategories(flattenCategories(categoryData))
+      setCategories(categoryData)
       setCurrentPage(productData.current_page)
       setLastPage(productData.last_page)
     }).catch(() => { if (active) setCatalogError(true) }).finally(() => { if (active) setLoading(false) })
@@ -287,7 +291,14 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
     }
   }
 
-  const visibleProducts = selectedCategory ? products.filter((product) => product.product_category_id === selectedCategory) : products
+  const flatCategories = flattenCategories(categories)
+  const selectedCategoryRecord = flatCategories.find((category) => category.id === selectedCategory)
+  const activeRootId = selectedCategoryRecord?.parent_id ?? selectedCategoryRecord?.id ?? null
+  const activeRoot = categories.find((category) => category.id === activeRootId)
+  const selectedCategoryIds = selectedCategoryRecord ? new Set(categoryBranchIds(selectedCategoryRecord)) : null
+  const visibleProducts = selectedCategoryIds
+    ? products.filter((product) => product.product_category_id !== null && selectedCategoryIds.has(product.product_category_id))
+    : products
   return (
     <>
       <PageHero eyebrow={managed.eyebrow || copy.productsPage.eyebrow} title={managed.title || copy.productsPage.title} lead={managed.lead || copy.productsPage.lead} />
@@ -301,9 +312,16 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
             <button className="button button-outline-blue" type="button" onClick={retryCatalog}><RotateCw />{locale === 'hy' ? 'Փորձել կրկին' : 'Try again'}</button>
           </div> : null}
           {!loading && products.length > 0 ? <>
-            <div className="catalog-filters">
-              <button className={selectedCategory === null ? 'active' : ''} onClick={() => setSelectedCategory(null)}>{locale === 'hy' ? 'Բոլորը' : 'All products'}</button>
-              {categories.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.parent_id ? '— ' : ''}{category.translations[locale]?.name || category.translations.en.name}</button>)}
+            <div className="catalog-filter-groups">
+              <div className="catalog-filters" aria-label={locale === 'hy' ? 'Ապրանքների կատեգորիաներ' : 'Product categories'}>
+                <button className={selectedCategory === null ? 'active' : ''} onClick={() => setSelectedCategory(null)}>{locale === 'hy' ? 'Բոլորը' : 'All products'}</button>
+                {categories.map((category) => <button key={category.id} className={activeRoot?.id === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
+              </div>
+              {activeRoot?.children?.length ? <div className="catalog-subfilters" aria-label={locale === 'hy' ? 'Ապրանքների ենթակատեգորիաներ' : 'Product subcategories'}>
+                <span>{locale === 'hy' ? 'Ենթակատեգորիաներ' : 'Subcategories'}</span>
+                <button className={selectedCategory === activeRoot.id ? 'active' : ''} onClick={() => setSelectedCategory(activeRoot.id)}>{locale === 'hy' ? 'Բոլորը բաժնում' : 'All in category'}</button>
+                {activeRoot.children.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
+              </div> : null}
             </div>
             {visibleProducts.length ? <div className="public-product-grid">{visibleProducts.map((product) => {
               const translation = product.translations[locale] ?? product.translations.en
