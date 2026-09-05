@@ -1,5 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
-import { FileText, Image, PackageSearch, Plus, Save, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, FileText, Image, PackageSearch, Plus, Save, Trash2, X } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { AdminContext } from '../../admin/AdminLayout'
 import { AdminError, AdminLoading, AdminPageHeading, AdminSuccess, Pagination } from '../../admin/shared'
@@ -48,19 +48,23 @@ function mediaToAsset(media: MediaAsset): ProductAsset {
   return { url: media.url, name: media.original_name, alt: media.alt ?? undefined }
 }
 
-function AssetPicker({ label, icon: Icon, assets, media, kind, onAdd, onRemove }: {
+function AssetPicker({ label, icon: Icon, assets, media, kind, maxItems, onAdd, onMove, onRemove }: {
   label: string
   icon: typeof Image
   assets: ProductAsset[]
   media: MediaAsset[]
   kind: MediaAsset['kind']
+  maxItems?: number
   onAdd: (asset: ProductAsset) => void
+  onMove?: (index: number, targetIndex: number) => void
   onRemove: (index: number) => void
 }) {
+  const limitReached = maxItems !== undefined && assets.length >= maxItems
+
   return (
     <div className="admin-assets-field">
-      <div className="admin-assets-heading"><span>{label}</span><select value="" onChange={(event) => { const selected = media.find((item) => item.id === Number(event.target.value)); if (selected) onAdd(mediaToAsset(selected)) }}><option value="">Ավելացնել ֆայլերից…</option>{media.filter((item) => item.kind === kind && !assets.some((asset) => asset.url === item.url)).map((item) => <option key={item.id} value={item.id}>{item.original_name}</option>)}</select></div>
-      {assets.length ? <div className="admin-selected-assets">{assets.map((asset, index) => <div key={`${asset.url}-${index}`}>{kind === 'image' ? <img src={asset.url} alt="" /> : <FileText />}<span>{asset.name ?? asset.url}</span><button type="button" onClick={() => onRemove(index)}><X /></button></div>)}</div> : <div className="admin-assets-empty"><Icon />Ընտրված ֆայլ չկա։ <Link to="/admin/media">Բեռնել ֆայլ</Link></div>}
+      <div className="admin-assets-heading"><span>{label}{maxItems ? <small>{assets.length}/{maxItems}</small> : null}</span><select disabled={limitReached} value="" onChange={(event) => { const selected = media.find((item) => item.id === Number(event.target.value)); if (selected) onAdd(mediaToAsset(selected)) }}><option value="">{limitReached ? `Առավելագույնը ${maxItems} նկար` : 'Ավելացնել ֆայլերից…'}</option>{media.filter((item) => item.kind === kind && !assets.some((asset) => asset.url === item.url)).map((item) => <option key={item.id} value={item.id}>{item.original_name}</option>)}</select></div>
+      {assets.length ? <div className="admin-selected-assets">{assets.map((asset, index) => <div key={`${asset.url}-${index}`}>{kind === 'image' ? <img src={asset.url} alt="" /> : <FileText />}<span>{kind === 'image' && index === 0 ? 'Գլխավոր · ' : ''}{asset.name ?? asset.url}</span><div className="admin-asset-actions">{onMove ? <><button type="button" disabled={index === 0} title="Տեղափոխել վերև" onClick={() => onMove(index, index - 1)}><ChevronUp /></button><button type="button" disabled={index === assets.length - 1} title="Տեղափոխել ներքև" onClick={() => onMove(index, index + 1)}><ChevronDown /></button></> : null}<button type="button" title="Հեռացնել" onClick={() => onRemove(index)}><X /></button></div></div>)}</div> : <div className="admin-assets-empty"><Icon />Ընտրված ֆայլ չկա։ <Link to="/admin/media">Բեռնել ֆայլ</Link></div>}
     </div>
   )
 }
@@ -150,6 +154,16 @@ export function AdminProductsPage() {
     setQuery(search.trim())
   }
 
+  function moveImage(index: number, targetIndex: number) {
+    setDraft((current) => {
+      const images = [...(current.images ?? [])]
+      if (!images[index] || targetIndex < 0 || targetIndex >= images.length) return current
+      const [image] = images.splice(index, 1)
+      images.splice(targetIndex, 0, image)
+      return { ...current, images }
+    })
+  }
+
   return (
     <>
       <AdminPageHeading eyebrow="ԿԱՏԱԼՈԳ" title="Ապրանքներ" action={<button className="admin-primary-button" onClick={() => { setDraft(emptyProduct()); setSuccess('') }}><Plus />Նոր ապրանք</button>} />
@@ -185,7 +199,7 @@ export function AdminProductsPage() {
               <label><span>Բնութագրեր՝ մեկ տողով «Անվանում: արժեք»</span><textarea rows={7} value={specsToText(draft.specifications?.[locale])} onChange={(event) => setDraft({ ...draft, specifications: { ...draft.specifications, [locale]: textToSpecs(event.target.value) } })} placeholder={locale === 'hy' ? 'Լարում: 230 V\nՀոսանք: 16 A' : 'Voltage: 230 V\nCurrent: 16 A'} /></label>
             </section>)}
           </div>
-          <AssetPicker label="Ապրանքի նկարներ" icon={Image} assets={draft.images ?? []} media={media} kind="image" onAdd={(asset) => setDraft({ ...draft, images: [...(draft.images ?? []), asset] })} onRemove={(index) => setDraft({ ...draft, images: (draft.images ?? []).filter((_, itemIndex) => itemIndex !== index) })} />
+          <AssetPicker label="Ապրանքի նկարներ" icon={Image} assets={draft.images ?? []} media={media} kind="image" maxItems={4} onAdd={(asset) => setDraft((current) => ({ ...current, images: [...(current.images ?? []), asset].slice(0, 4) }))} onMove={moveImage} onRemove={(index) => setDraft((current) => ({ ...current, images: (current.images ?? []).filter((_, itemIndex) => itemIndex !== index) }))} />
           <AssetPicker label="PDF փաստաթղթեր" icon={FileText} assets={draft.documents ?? []} media={media} kind="document" onAdd={(asset) => setDraft({ ...draft, documents: [...(draft.documents ?? []), asset] })} onRemove={(index) => setDraft({ ...draft, documents: (draft.documents ?? []).filter((_, itemIndex) => itemIndex !== index) })} />
         </form>
       </div>}

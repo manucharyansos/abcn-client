@@ -1,7 +1,7 @@
-import { type FormEvent, useEffect, useState } from 'react'
+import { type FormEvent, type MouseEvent as ReactMouseEvent, useEffect, useState } from 'react'
 import {
   ArrowRight, Cable, ChevronRight, CircleGauge, FileText,
-  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, Send, SlidersHorizontal,
+  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, ScanSearch, Send, SlidersHorizontal,
 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, type AdminPage, type PageLocaleContent, type Product, type ProductCategory } from '../api'
@@ -43,6 +43,52 @@ function categoryBranchIds(category: ProductCategory): number[] {
 
 function productAssetUrl(product: Product) {
   return product.images?.[0]?.url ?? ''
+}
+
+function ProductGallery({ product, locale, productName }: { product: Product; locale: Locale; productName: string }) {
+  const images = product.images ?? []
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [zooming, setZooming] = useState(false)
+  const activeIndex = images[selectedIndex] ? selectedIndex : 0
+  const activeImage = images[activeIndex]
+
+  function updateZoom(event: ReactMouseEvent<HTMLDivElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const x = Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100))
+    const y = Math.max(0, Math.min(100, ((event.clientY - bounds.top) / bounds.height) * 100))
+    event.currentTarget.parentElement?.style.setProperty('--zoom-x', `${x}%`)
+    event.currentTarget.parentElement?.style.setProperty('--zoom-y', `${y}%`)
+  }
+
+  function selectImage(index: number) {
+    setSelectedIndex(index)
+    setZooming(false)
+  }
+
+  return <div className="product-gallery">
+    <div className="product-gallery-stage">
+      <div className="product-detail-image" onMouseEnter={() => setZooming(Boolean(activeImage))} onMouseMove={activeImage ? updateZoom : undefined} onMouseLeave={() => setZooming(false)}>
+        {activeImage ? <img src={activeImage.url} alt={activeImage.alt?.[locale] || productName} /> : <PackageSearch />}
+        {zooming ? <span className="product-zoom-lens" aria-hidden="true" /> : null}
+      </div>
+      {activeImage && zooming ? <div
+        className="product-zoom-preview"
+        style={{ backgroundImage: `url(${activeImage.url})` }}
+        aria-hidden="true"
+      /> : null}
+    </div>
+    {images.length > 1 ? <div className="product-thumbnails" aria-label={locale === 'hy' ? 'Ապրանքի նկարներ' : 'Product images'}>
+      {images.slice(0, 4).map((image, index) => <button
+        type="button"
+        className={activeIndex === index ? 'active' : ''}
+        aria-pressed={activeIndex === index}
+        aria-label={locale === 'hy' ? `Ցույց տալ նկար ${index + 1}` : `Show image ${index + 1}`}
+        onClick={() => selectImage(index)}
+        key={`${image.url}-${index}`}
+      ><img src={image.url} alt="" loading="lazy" /></button>)}
+    </div> : null}
+    {activeImage ? <p className="product-zoom-hint"><ScanSearch />{locale === 'hy' ? 'Պահեք մկնիկը նկարի վրա՝ մեծացնելու համար' : 'Hover over the image to magnify'}</p> : null}
+  </div>
 }
 
 function Eyebrow({ children }: { children: string }) {
@@ -375,11 +421,10 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
 
   const translation = product.translations[locale] ?? product.translations.en
   const specs = product.specifications?.[locale] ?? product.specifications?.en ?? {}
-  const image = productAssetUrl(product)
   return <>
     <PageHero eyebrow={product.category?.translations?.[locale]?.name || copy.productsPage.eyebrow} title={translation.name} lead={translation.description || copy.productsPage.lead} />
     <section className="section"><div className="container product-detail-grid">
-      <div className="product-detail-image">{image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}</div>
+      <ProductGallery product={product} locale={locale} productName={translation.name} />
       <div className="product-detail-info">
         {product.sku && <p className="product-sku">SKU · {product.sku}</p>}
         <h2>{locale === 'hy' ? 'Տեխնիկական տվյալներ' : 'Technical specifications'}</h2>
