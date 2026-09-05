@@ -40,6 +40,12 @@ The production output is written to `dist/`.
 - `/about` — company and leadership
 - `/solutions` — engineering directions
 - `/products` — prepared catalog structure
+- `/products/:slug` — published product details and documents
 - `/contact` — project inquiry form
 - `/admin/login` — administration login
-- `/admin` — inquiries dashboard
+- `/admin` — administration dashboard
+- `/admin/inquiries` — project inquiries
+- `/admin/content` — bilingual page and SEO editor
+- `/admin/categories` — product category editor
+- `/admin/products` — product, specification and document editor
+- `/admin/media` — image and PDF library

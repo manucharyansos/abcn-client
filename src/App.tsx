@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { AdminLayout } from './admin/AdminLayout'
 import { content, type Locale } from './content'
 import {
   AboutPage,
   ContactPage,
   HomePage,
+  ProductDetailPage,
   ProductsPage,
   SolutionsPage,
 } from './pages/PublicPages'
-import { AdminDashboardPage, AdminLoginPage } from './pages/AdminPages'
+import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage'
+import { AdminContentPage } from './pages/admin/AdminContentPage'
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
+import { AdminInquiriesPage } from './pages/admin/AdminInquiriesPage'
+import { AdminLoginPage } from './pages/admin/AdminLoginPage'
+import { AdminMediaPage } from './pages/admin/AdminMediaPage'
+import { AdminProductsPage } from './pages/admin/AdminProductsPage'
 
 function ScrollToTop() {
   const location = useLocation()
@@ -46,14 +54,22 @@ function App() {
         <Route
           element={<Layout locale={locale} setLocale={setLocale} copy={copy} />}
         >
-          <Route index element={<HomePage copy={copy} />} />
-          <Route path="about" element={<AboutPage copy={copy} />} />
-          <Route path="solutions" element={<SolutionsPage copy={copy} />} />
-          <Route path="products" element={<ProductsPage copy={copy} />} />
+          <Route index element={<HomePage copy={copy} locale={locale} />} />
+          <Route path="about" element={<AboutPage copy={copy} locale={locale} />} />
+          <Route path="solutions" element={<SolutionsPage copy={copy} locale={locale} />} />
+          <Route path="products" element={<ProductsPage copy={copy} locale={locale} />} />
+          <Route path="products/:slug" element={<ProductDetailPage copy={copy} locale={locale} />} />
           <Route path="contact" element={<ContactPage copy={copy} locale={locale} />} />
         </Route>
         <Route path="admin/login" element={<AdminLoginPage />} />
-        <Route path="admin" element={<AdminDashboardPage />} />
+        <Route path="admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="inquiries" element={<AdminInquiriesPage />} />
+          <Route path="content" element={<AdminContentPage />} />
+          <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="media" element={<AdminMediaPage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

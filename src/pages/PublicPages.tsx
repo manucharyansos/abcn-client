@@ -1,13 +1,36 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import {
   ArrowRight, Cable, ChevronRight, CircleGauge, FileText,
-  Layers3, Mail, MapPin, Network, Phone, Send, SlidersHorizontal,
+  Layers3, Mail, MapPin, Network, PackageSearch, Phone, Send, SlidersHorizontal,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { api } from '../api'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { api, type AdminPage, type PageLocaleContent, type Product, type ProductCategory } from '../api'
 import { company, type Locale, type SiteCopy } from '../content'
 
 const directionIcons = [Cable, SlidersHorizontal, CircleGauge, Network]
+
+function useManagedPage(slug: string, locale: Locale) {
+  const [page, setPage] = useState<AdminPage | null>(null)
+
+  useEffect(() => {
+    let active = true
+    api.getPublicPage(slug).then((result) => {
+      if (!active) return
+      setPage(result)
+      const meta = result.meta?.[locale]
+      if (meta?.title) document.title = `${meta.title} | ABCN`
+      const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+      if (description && meta?.description) description.content = meta.description
+    }).catch(() => undefined)
+    return () => { active = false }
+  }, [locale, slug])
+
+  return (page?.content[locale] ?? {}) as Partial<PageLocaleContent>
+}
+
+function productAssetUrl(product: Product) {
+  return product.images?.[0]?.url ?? ''
+}
 
 function Eyebrow({ children }: { children: string }) {
   return <p className="eyebrow"><span />{children}</p>
@@ -43,16 +66,17 @@ function ClosingCta({ copy }: { copy: SiteCopy }) {
   )
 }
 
-export function HomePage({ copy }: { copy: SiteCopy }) {
+export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+  const managed = useManagedPage('home', locale)
   return (
     <>
       <section className="home-hero">
         <img className="home-hero-image" src="/images/abcn-hero.webp" alt="" />
         <div className="home-hero-shade" />
         <div className="container home-hero-content">
-          <Eyebrow>{copy.hero.eyebrow}</Eyebrow>
-          <h1>{copy.hero.title}</h1>
-          <p className="hero-lead">{copy.hero.body}</p>
+          <Eyebrow>{managed.eyebrow || copy.hero.eyebrow}</Eyebrow>
+          <h1>{managed.title || copy.hero.title}</h1>
+          <p className="hero-lead">{managed.lead || copy.hero.body}</p>
           <div className="hero-actions">
             <Link className="button button-primary" to="/contact">
               {copy.hero.primary}<ArrowRight size={18} />
@@ -71,7 +95,7 @@ export function HomePage({ copy }: { copy: SiteCopy }) {
           <Eyebrow>{copy.intro.eyebrow}</Eyebrow>
           <div>
             <h2>{copy.intro.title}</h2>
-            <p>{copy.intro.body}</p>
+            <p>{managed.body || copy.intro.body}</p>
             <Link className="text-link" to="/about">{copy.intro.link}<ArrowRight size={17} /></Link>
           </div>
         </div>
@@ -132,14 +156,15 @@ export function HomePage({ copy }: { copy: SiteCopy }) {
   )
 }
 
-export function AboutPage({ copy }: { copy: SiteCopy }) {
+export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+  const managed = useManagedPage('about', locale)
   return (
     <>
-      <PageHero eyebrow={copy.about.eyebrow} title={copy.about.title} lead={copy.about.lead} />
+      <PageHero eyebrow={managed.eyebrow || copy.about.eyebrow} title={managed.title || copy.about.title} lead={managed.lead || copy.about.lead} />
       <section className="section">
         <div className="container editorial-grid">
           <div className="editorial-index">01</div>
-          <div><h2>{copy.about.storyTitle}</h2><p className="large-copy">{copy.about.story}</p></div>
+          <div><h2>{copy.about.storyTitle}</h2><p className="large-copy">{managed.body || copy.about.story}</p></div>
         </div>
       </section>
       <section className="section soft-section">
@@ -175,10 +200,11 @@ export function AboutPage({ copy }: { copy: SiteCopy }) {
   )
 }
 
-export function SolutionsPage({ copy }: { copy: SiteCopy }) {
+export function SolutionsPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+  const managed = useManagedPage('solutions', locale)
   return (
     <>
-      <PageHero eyebrow={copy.solutionsPage.eyebrow} title={copy.solutionsPage.title} lead={copy.solutionsPage.lead} />
+      <PageHero eyebrow={managed.eyebrow || copy.solutionsPage.eyebrow} title={managed.title || copy.solutionsPage.title} lead={managed.lead || copy.solutionsPage.lead} />
       <section className="section">
         <div className="container solution-list">
           {copy.directions.items.map((item, index) => {
@@ -196,7 +222,7 @@ export function SolutionsPage({ copy }: { copy: SiteCopy }) {
       <section className="section soft-section">
         <div className="container expansion-note">
           <div className="expansion-icon"><Network /></div>
-          <div><h2>{copy.solutionsPage.noteTitle}</h2><p>{copy.solutionsPage.note}</p></div>
+          <div><h2>{copy.solutionsPage.noteTitle}</h2><p>{managed.body || copy.solutionsPage.note}</p></div>
         </div>
       </section>
       <ClosingCta copy={copy} />
@@ -204,21 +230,54 @@ export function SolutionsPage({ copy }: { copy: SiteCopy }) {
   )
 }
 
-export function ProductsPage({ copy }: { copy: SiteCopy }) {
+export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+  const managed = useManagedPage('products', locale)
   const icons = [Layers3, SlidersHorizontal, FileText, Send]
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    Promise.all([api.getPublicProducts(), api.getPublicCategories()]).then(([productData, categoryData]) => {
+      if (!active) return
+      setProducts(productData.data)
+      setCategories(categoryData)
+    }).catch(() => undefined).finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
+
+  const visibleProducts = selectedCategory ? products.filter((product) => product.product_category_id === selectedCategory) : products
   return (
     <>
-      <PageHero eyebrow={copy.productsPage.eyebrow} title={copy.productsPage.title} lead={copy.productsPage.lead} />
+      <PageHero eyebrow={managed.eyebrow || copy.productsPage.eyebrow} title={managed.title || copy.productsPage.title} lead={managed.lead || copy.productsPage.lead} />
       <section className="section products-preview">
         <div className="container">
-          <div className="catalog-status"><span className="status-dot" />{copy.productsPage.status}</div>
-          <div className="product-feature-grid">
+          {loading && <div className="catalog-status"><span className="status-dot" />{locale === 'hy' ? 'Կատալոգը բեռնվում է…' : 'Loading catalog…'}</div>}
+          {!loading && products.length > 0 ? <>
+            <div className="catalog-filters">
+              <button className={selectedCategory === null ? 'active' : ''} onClick={() => setSelectedCategory(null)}>{locale === 'hy' ? 'Բոլորը' : 'All products'}</button>
+              {categories.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name}</button>)}
+            </div>
+            {visibleProducts.length ? <div className="public-product-grid">{visibleProducts.map((product) => {
+              const translation = product.translations[locale] ?? product.translations.en
+              const image = productAssetUrl(product)
+              return <Link className="public-product-card" to={`/products/${product.slug}`} key={product.id}>
+                <div className="public-product-image">{image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}{product.featured && <span>{locale === 'hy' ? 'Ընտրված' : 'Featured'}</span>}</div>
+                <div className="public-product-copy"><small>{product.category?.translations?.[locale]?.name || product.sku}</small><h2>{translation.name}</h2><p>{translation.description}</p><strong>{locale === 'hy' ? 'Տեսնել մանրամասները' : 'View details'}<ArrowRight /></strong></div>
+              </Link>
+            })}</div> : <div className="catalog-empty">{locale === 'hy' ? 'Այս կատեգորիայում ապրանք դեռ չկա։' : 'There are no products in this category yet.'}</div>}
+          </> : !loading && <>
+            <div className="catalog-status"><span className="status-dot" />{copy.productsPage.status}</div>
+            <div className="product-feature-grid">
             {copy.productsPage.features.map(([title, text], index) => {
               const Icon = icons[index]
               return <article key={title}><Icon /><h3>{title}</h3><p>{text}</p></article>
             })}
-          </div>
-          <Link className="button button-primary dark-button" to="/contact">{copy.productsPage.action}<ArrowRight size={18} /></Link>
+            </div>
+            <Link className="button button-primary dark-button" to="/contact">{copy.productsPage.action}<ArrowRight size={18} /></Link>
+          </>}
         </div>
       </section>
       <ClosingCta copy={copy} />
@@ -226,7 +285,42 @@ export function ProductsPage({ copy }: { copy: SiteCopy }) {
   )
 }
 
+export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+  const { slug = '' } = useParams()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    api.getPublicProduct(slug).then((result) => { if (active) setProduct(result) }).catch(() => undefined).finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [slug])
+
+  if (loading) return <section className="section"><div className="container catalog-empty">{locale === 'hy' ? 'Ապրանքը բեռնվում է…' : 'Loading product…'}</div></section>
+  if (!product) return <section className="section"><div className="container catalog-empty"><h1>{locale === 'hy' ? 'Ապրանքը չի գտնվել' : 'Product not found'}</h1><Link className="text-link" to="/products">{locale === 'hy' ? 'Վերադառնալ կատալոգ' : 'Back to catalog'}</Link></div></section>
+
+  const translation = product.translations[locale] ?? product.translations.en
+  const specs = product.specifications?.[locale] ?? product.specifications?.en ?? {}
+  const image = productAssetUrl(product)
+  return <>
+    <PageHero eyebrow={product.category?.translations?.[locale]?.name || copy.productsPage.eyebrow} title={translation.name} lead={translation.description || copy.productsPage.lead} />
+    <section className="section"><div className="container product-detail-grid">
+      <div className="product-detail-image">{image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}</div>
+      <div className="product-detail-info">
+        {product.sku && <p className="product-sku">SKU · {product.sku}</p>}
+        <h2>{locale === 'hy' ? 'Տեխնիկական տվյալներ' : 'Technical specifications'}</h2>
+        {Object.keys(specs).length ? <dl>{Object.entries(specs).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl> : <p>{locale === 'hy' ? 'Տեխնիկական տվյալները ճշտվում են։' : 'Technical data is being prepared.'}</p>}
+        {product.documents?.length ? <div className="product-documents"><h3>{locale === 'hy' ? 'Փաստաթղթեր' : 'Documents'}</h3>{product.documents.map((document) => <a key={document.url} href={document.url} target="_blank" rel="noreferrer"><FileText />{document.name || 'PDF'}</a>)}</div> : null}
+        <Link className="button button-primary dark-button" to={`/contact?product=${encodeURIComponent(translation.name)}`}>{locale === 'hy' ? 'Ստանալ առաջարկ' : 'Request a quote'}<ArrowRight /></Link>
+      </div>
+    </div></section>
+  </>
+}
+
 export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+  const managed = useManagedPage('contact', locale)
+  const [searchParams] = useSearchParams()
+  const productName = searchParams.get('product')
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -249,7 +343,7 @@ export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }
 
   return (
     <>
-      <PageHero eyebrow={copy.contact.eyebrow} title={copy.contact.title} lead={copy.contact.lead} />
+      <PageHero eyebrow={managed.eyebrow || copy.contact.eyebrow} title={managed.title || copy.contact.title} lead={managed.lead || copy.contact.lead} />
       <section className="section contact-section">
         <div className="container contact-grid">
           <form className="contact-form" onSubmit={submit}>
@@ -260,7 +354,7 @@ export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }
               <label><span>{copy.contact.email}</span><input name="email" type="email" required autoComplete="email" /></label>
               <label><span>{copy.contact.phone}</span><input name="phone" required autoComplete="tel" /></label>
             </div>
-            <label><span>{copy.contact.message}</span><textarea name="message" rows={6} required /></label>
+            <label><span>{copy.contact.message}</span><textarea name="message" rows={6} defaultValue={productName ? (locale === 'hy' ? `Հետաքրքրված եմ «${productName}» ապրանքով։` : `I am interested in “${productName}”.`) : ''} required /></label>
             <button className="button button-primary dark-button" disabled={status === 'sending'}>
               {status === 'sending' ? copy.contact.sending : copy.contact.submit}<Send size={17} />
             </button>
