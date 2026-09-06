@@ -97,10 +97,18 @@ export type ContactRequestPayload = {
   email: string
   phone: string
   message: string
+  product_slug?: string
+  quantity?: number
 }
 
-export type ContactRequestRecord = ContactRequestPayload & {
+export type ContactRequestRecord = Omit<ContactRequestPayload, 'product_slug' | 'quantity'> & {
   id: number
+  request_type: 'general' | 'product_quote'
+  product_id: number | null
+  product_name: string | null
+  product_sku: string | null
+  quantity: number | null
+  product?: Pick<Product, 'id' | 'slug' | 'sku' | 'translations' | 'images'> | null
   status: 'new' | 'in_progress' | 'completed' | 'archived'
   created_at: string
 }
@@ -127,7 +135,7 @@ export const api = {
       requests: ContactRequestRecord[]
     }>('/admin/dashboard', { token }),
 
-  getContactRequests: (token: string, params: { page?: number; status?: string; search?: string } = {}) =>
+  getContactRequests: (token: string, params: { page?: number; status?: string; type?: string; search?: string } = {}) =>
     request<Paginated<ContactRequestRecord>>(withQuery('/admin/contact-requests', params), { token }),
   updateRequestStatus: (token: string, id: number, status: ContactRequestRecord['status']) =>
     request<ContactRequestRecord>(`/admin/contact-requests/${id}`, {

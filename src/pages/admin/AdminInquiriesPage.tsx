@@ -10,6 +10,7 @@ export function AdminInquiriesPage() {
   const { token } = useOutletContext<AdminContext>()
   const [data, setData] = useState<Paginated<ContactRequestRecord> | null>(null)
   const [status, setStatus] = useState('')
+  const [type, setType] = useState('')
   const [search, setSearch] = useState('')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
@@ -19,14 +20,14 @@ export function AdminInquiriesPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setData(await api.getContactRequests(token, { page, status, search: query }))
+      setData(await api.getContactRequests(token, { page, status, type, search: query }))
       setError('')
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Հարցումները չբեռնվեցին։')
     } finally {
       setLoading(false)
     }
-  }, [page, query, status, token])
+  }, [page, query, status, token, type])
 
   // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void load() }, [load])
@@ -50,7 +51,10 @@ export function AdminInquiriesPage() {
     <>
       <AdminPageHeading eyebrow="CRM" title="Հարցումներ" />
       <form className="admin-filters" onSubmit={submitSearch}>
-        <label className="admin-search"><Search /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Անուն, ընկերություն, email կամ հեռախոս" /></label>
+        <label className="admin-search"><Search /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Անուն, կոնտակտ, ապրանք կամ SKU" /></label>
+        <select value={type} onChange={(event) => { setType(event.target.value); setPage(1) }}>
+          <option value="">Բոլոր հարցումները</option><option value="product_quote">Ապրանքի առաջարկ</option><option value="general">Ընդհանուր հարցում</option>
+        </select>
         <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1) }}>
           <option value="">Բոլոր կարգավիճակները</option><option value="new">Նոր</option><option value="in_progress">Ընթացքում</option><option value="completed">Ավարտված</option><option value="archived">Արխիվ</option>
         </select>

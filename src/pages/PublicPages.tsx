@@ -111,7 +111,7 @@ function ProductCard({ product, locale }: { product: Product; locale: Locale }) 
 
 type ProductInfoTab = 'overview' | 'specifications' | 'documents'
 
-function ProductInformation({ product, locale, productName, description }: { product: Product; locale: Locale; productName: string; description: string }) {
+function ProductInformation({ product, locale, description }: { product: Product; locale: Locale; description: string }) {
   const [activeTab, setActiveTab] = useState<ProductInfoTab>('overview')
   const specs = product.specifications?.[locale] ?? product.specifications?.en ?? {}
   const documents = product.documents ?? []
@@ -157,7 +157,7 @@ function ProductInformation({ product, locale, productName, description }: { pro
     </div>
     <div className="product-quote-box">
       <p>{locale === 'hy' ? 'Պե՞տք է ընտրության աջակցություն կամ գնային առաջարկ։' : 'Need selection support or a commercial quote?'}</p>
-      <Link className="button button-primary dark-button" to={`/contact?product=${encodeURIComponent(productName)}`}>{locale === 'hy' ? 'Ստանալ առաջարկ' : 'Request a quote'}<ArrowRight /></Link>
+      <Link className="button button-primary dark-button" to={`/contact?product=${encodeURIComponent(product.slug)}`}>{locale === 'hy' ? 'Ստանալ առաջարկ' : 'Request a quote'}<ArrowRight /></Link>
     </div>
   </div>
 }
@@ -499,7 +499,7 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
       </nav>
       <div className="product-detail-grid">
         <ProductGallery product={product} locale={locale} productName={translation.name} key={product.id} />
-        <ProductInformation product={product} locale={locale} productName={translation.name} description={translation.description || copy.productsPage.lead} key={product.id} />
+        <ProductInformation product={product} locale={locale} description={translation.description || copy.productsPage.lead} key={product.id} />
       </div>
     </div></section>
     {relatedProducts.length ? <section className="section soft-section related-products-section"><div className="container">
@@ -512,8 +512,29 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
 export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
   const managed = useManagedPage('contact', locale, copy.contact.title, copy.contact.lead)
   const [searchParams] = useSearchParams()
-  const productName = searchParams.get('product')
+  const productSlug = searchParams.get('product')?.trim() ?? ''
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [productState, setProductState] = useState<'idle' | 'loading' | 'ready' | 'error'>(productSlug ? 'loading' : 'idle')
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+
+  useEffect(() => {
+    let active = true
+    // oxlint-disable-next-line react/set-state-in-effect
+    setSelectedProduct(null)
+    setProductState(productSlug ? 'loading' : 'idle')
+    if (!productSlug) return () => { active = false }
+
+    api.getPublicProduct(productSlug).then((product) => {
+      if (!active) return
+      setSelectedProduct(product)
+      setProductState('ready')
+    }).catch(() => {
+      if (!active) return
+      setProductState('error')
+    })
+
+    return () => { active = false }
+  }, [productSlug])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -525,6 +546,8 @@ export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }
         name: String(form.get('name') ?? ''), company: String(form.get('company') ?? ''),
         email: String(form.get('email') ?? ''), phone: String(form.get('phone') ?? ''),
         message: String(form.get('message') ?? ''),
+        product_slug: selectedProduct?.slug,
+        quantity: selectedProduct && form.get('quantity') ? Number(form.get('quantity')) : undefined,
       })
       event.currentTarget.reset()
       setStatus('success')
@@ -533,21 +556,37 @@ export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }
     }
   }
 
+  const selectedTranslation = selectedProduct
+    ? (selectedProduct.translations[locale] ?? selectedProduct.translations.en)
+    : null
+  const selectedImage = selectedProduct ? productAssetUrl(selectedProduct) : ''
+  const defaultMessage = selectedTranslation
+    ? (locale === 'hy' ? `Հետաքրքրված եմ «${selectedTranslation.name}» ապրանքով։ Խնդրում եմ ուղարկել գնային առաջարկ։` : `I am interested in “${selectedTranslation.name}”. Please send a commercial quote.`)
+    : ''
+
   return (
     <>
       <PageHero eyebrow={managed.eyebrow || copy.contact.eyebrow} title={managed.title || copy.contact.title} lead={managed.lead || copy.contact.lead} />
       <section className="section contact-section">
         <div className="container contact-grid">
           <form className="contact-form" onSubmit={submit}>
-            <h2>{copy.contact.formTitle}</h2>
+            <h2>{selectedProduct ? (locale === 'hy' ? 'Ապրանքի գնային առաջարկ' : 'Product quote request') : copy.contact.formTitle}</h2>
+            {productState === 'loading' ? <div className="quote-product-loading" role="status"><LoaderCircle />{locale === 'hy' ? 'Ապրանքը բեռնվում է…' : 'Loading product…'}</div> : null}
+            {selectedProduct && selectedTranslation ? <div className="quote-product-summary">
+              <div className="quote-product-image">{selectedImage ? <img src={selectedImage} alt="" /> : <PackageSearch />}</div>
+              <div><span>{locale === 'hy' ? 'Ընտրված ապրանք' : 'Selected product'}</span><strong>{selectedTranslation.name}</strong>{selectedProduct.sku ? <small>SKU · {selectedProduct.sku}</small> : null}</div>
+              <Link to={`/products/${selectedProduct.slug}`}>{locale === 'hy' ? 'Դիտել' : 'View'}<ArrowRight /></Link>
+            </div> : null}
+            {productState === 'error' ? <p className="form-status error" role="alert">{locale === 'hy' ? 'Ընտրված ապրանքը չի գտնվել։ Կարող եք ուղարկել ընդհանուր հարցում։' : 'The selected product was not found. You can send a general inquiry.'}</p> : null}
             <div className="field-grid">
               <label><span>{copy.contact.name}</span><input name="name" required autoComplete="name" /></label>
               <label><span>{copy.contact.company}</span><input name="company" autoComplete="organization" /></label>
               <label><span>{copy.contact.email}</span><input name="email" type="email" required autoComplete="email" /></label>
               <label><span>{copy.contact.phone}</span><input name="phone" required autoComplete="tel" /></label>
+              {selectedProduct ? <label><span>{locale === 'hy' ? 'Նախնական քանակ' : 'Estimated quantity'}</span><input name="quantity" type="number" min="1" max="1000000" inputMode="numeric" placeholder={locale === 'hy' ? 'Օրինակ՝ 10' : 'For example: 10'} /></label> : null}
             </div>
-            <label><span>{copy.contact.message}</span><textarea name="message" rows={6} defaultValue={productName ? (locale === 'hy' ? `Հետաքրքրված եմ «${productName}» ապրանքով։` : `I am interested in “${productName}”.`) : ''} required /></label>
-            <button className="button button-primary dark-button" disabled={status === 'sending'}>
+            <label><span>{copy.contact.message}</span><textarea key={selectedProduct?.slug ?? 'general'} name="message" rows={6} defaultValue={defaultMessage} required /></label>
+            <button className="button button-primary dark-button" disabled={status === 'sending' || productState === 'loading'}>
               {status === 'sending' ? copy.contact.sending : copy.contact.submit}<Send size={17} />
             </button>
             {status === 'success' && <p className="form-status success" role="status">{copy.contact.success}</p>}
