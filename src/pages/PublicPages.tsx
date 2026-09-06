@@ -91,6 +91,77 @@ function ProductGallery({ product, locale, productName }: { product: Product; lo
   </div>
 }
 
+function ProductCard({ product, locale }: { product: Product; locale: Locale }) {
+  const translation = product.translations[locale] ?? product.translations.en
+  const image = productAssetUrl(product)
+
+  return <Link className="public-product-card" to={`/products/${product.slug}`}>
+    <div className="public-product-image">
+      {image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}
+      {product.featured ? <span>{locale === 'hy' ? 'Ընտրված' : 'Featured'}</span> : null}
+    </div>
+    <div className="public-product-copy">
+      <small>{product.category?.translations?.[locale]?.name || product.sku}</small>
+      <h2>{translation.name}</h2>
+      <p>{translation.description}</p>
+      <strong>{locale === 'hy' ? 'Տեսնել մանրամասները' : 'View details'}<ArrowRight /></strong>
+    </div>
+  </Link>
+}
+
+type ProductInfoTab = 'overview' | 'specifications' | 'documents'
+
+function ProductInformation({ product, locale, productName, description }: { product: Product; locale: Locale; productName: string; description: string }) {
+  const [activeTab, setActiveTab] = useState<ProductInfoTab>('overview')
+  const specs = product.specifications?.[locale] ?? product.specifications?.en ?? {}
+  const documents = product.documents ?? []
+  const categoryName = product.category?.translations?.[locale]?.name || product.category?.translations?.en.name || '—'
+  const tabs: { id: ProductInfoTab; label: string }[] = [
+    { id: 'overview', label: locale === 'hy' ? 'Նկարագրություն' : 'Overview' },
+    { id: 'specifications', label: locale === 'hy' ? 'Տեխնիկական տվյալներ' : 'Specifications' },
+    { id: 'documents', label: `${locale === 'hy' ? 'Փաստաթղթեր' : 'Documents'}${documents.length ? ` (${documents.length})` : ''}` },
+  ]
+
+  return <div className="product-detail-info">
+    {product.sku ? <p className="product-sku">SKU · {product.sku}</p> : null}
+    <div className="product-info-tabs" role="tablist" aria-label={locale === 'hy' ? 'Ապրանքի տեղեկություն' : 'Product information'}>
+      {tabs.map((tab) => <button
+        type="button"
+        role="tab"
+        id={`product-tab-${tab.id}`}
+        aria-selected={activeTab === tab.id}
+        aria-controls={`product-panel-${tab.id}`}
+        className={activeTab === tab.id ? 'active' : ''}
+        onClick={() => setActiveTab(tab.id)}
+        key={tab.id}
+      >{tab.label}</button>)}
+    </div>
+    <div className="product-info-panel" role="tabpanel" id="product-panel-overview" aria-labelledby="product-tab-overview" hidden={activeTab !== 'overview'}>
+      <div className="product-overview">
+        <p>{description}</p>
+        <div className="product-overview-meta">
+          <div><span>{locale === 'hy' ? 'Կատեգորիա' : 'Category'}</span><strong>{categoryName}</strong></div>
+          <div><span>SKU</span><strong>{product.sku || '—'}</strong></div>
+        </div>
+      </div>
+    </div>
+    <div className="product-info-panel" role="tabpanel" id="product-panel-specifications" aria-labelledby="product-tab-specifications" hidden={activeTab !== 'specifications'}>
+      {Object.keys(specs).length
+        ? <dl>{Object.entries(specs).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>
+        : <p className="product-info-empty">{locale === 'hy' ? 'Տեխնիկական տվյալները ճշտվում են։' : 'Technical data is being prepared.'}</p>}
+    </div>
+    <div className="product-info-panel" role="tabpanel" id="product-panel-documents" aria-labelledby="product-tab-documents" hidden={activeTab !== 'documents'}>
+      <div className="product-documents">
+        {documents.length ? documents.map((document, index) => <a key={`${document.url}-${index}`} href={document.url} target="_blank" rel="noreferrer"><FileText />{document.name || 'PDF'}</a>) : <p className="product-info-empty">{locale === 'hy' ? 'Փաստաթղթերը շուտով կավելացվեն։' : 'Documents will be added soon.'}</p>}
+      </div>
+    </div>
+    <div className="product-quote-box">
+      <p>{locale === 'hy' ? 'Պե՞տք է ընտրության աջակցություն կամ գնային առաջարկ։' : 'Need selection support or a commercial quote?'}</p>
+      <Link className="button button-primary dark-button" to={`/contact?product=${encodeURIComponent(productName)}`}>{locale === 'hy' ? 'Ստանալ առաջարկ' : 'Request a quote'}<ArrowRight /></Link>
+    </div>
+  </div>
+}
+
 function Eyebrow({ children }: { children: string }) {
   return <p className="eyebrow"><span />{children}</p>
 }
@@ -369,14 +440,7 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
                 {activeRoot.children.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
               </div> : null}
             </div>
-            {visibleProducts.length ? <div className="public-product-grid">{visibleProducts.map((product) => {
-              const translation = product.translations[locale] ?? product.translations.en
-              const image = productAssetUrl(product)
-              return <Link className="public-product-card" to={`/products/${product.slug}`} key={product.id}>
-                <div className="public-product-image">{image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}{product.featured && <span>{locale === 'hy' ? 'Ընտրված' : 'Featured'}</span>}</div>
-                <div className="public-product-copy"><small>{product.category?.translations?.[locale]?.name || product.sku}</small><h2>{translation.name}</h2><p>{translation.description}</p><strong>{locale === 'hy' ? 'Տեսնել մանրամասները' : 'View details'}<ArrowRight /></strong></div>
-              </Link>
-            })}</div> : <div className="catalog-empty">{locale === 'hy' ? 'Այս կատեգորիայում ապրանք դեռ չկա։' : 'There are no products in this category yet.'}</div>}
+            {visibleProducts.length ? <div className="public-product-grid">{visibleProducts.map((product) => <ProductCard product={product} locale={locale} key={product.id} />)}</div> : <div className="catalog-empty">{locale === 'hy' ? 'Այս կատեգորիայում ապրանք դեռ չկա։' : 'There are no products in this category yet.'}</div>}
             {currentPage < lastPage ? <button className="button catalog-more" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle className="spin" /> : null}{loadingMore ? (locale === 'hy' ? 'Բեռնվում է…' : 'Loading…') : (locale === 'hy' ? 'Ցույց տալ ավելին' : 'Show more')}</button> : null}
             {catalogError ? <p className="catalog-inline-error" role="alert">{locale === 'hy' ? 'Հաջորդ ապրանքները չբեռնվեցին։ Փորձեք կրկին։' : 'More products could not be loaded. Please try again.'}</p> : null}
           </> : !loading && !catalogError && <>
@@ -403,7 +467,9 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
 
   useEffect(() => {
     let active = true
-    api.getPublicProduct(slug).then((result) => { if (active) setProduct(result) }).catch(() => undefined).finally(() => { if (active) setLoading(false) })
+    // oxlint-disable-next-line react/set-state-in-effect
+    setLoading(true)
+    api.getPublicProduct(slug).then((result) => { if (active) setProduct(result) }).catch(() => { if (active) setProduct(null) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [slug])
 
@@ -420,19 +486,26 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
   if (!product) return <section className="section"><div className="container catalog-empty"><h1>{locale === 'hy' ? 'Ապրանքը չի գտնվել' : 'Product not found'}</h1><Link className="text-link" to="/products">{locale === 'hy' ? 'Վերադառնալ կատալոգ' : 'Back to catalog'}</Link></div></section>
 
   const translation = product.translations[locale] ?? product.translations.en
-  const specs = product.specifications?.[locale] ?? product.specifications?.en ?? {}
+  const categoryName = product.category?.translations?.[locale]?.name || product.category?.translations?.en.name
+  const relatedProducts = product.related_products ?? []
   return <>
     <PageHero eyebrow={product.category?.translations?.[locale]?.name || copy.productsPage.eyebrow} title={translation.name} lead={translation.description || copy.productsPage.lead} />
-    <section className="section"><div className="container product-detail-grid">
-      <ProductGallery product={product} locale={locale} productName={translation.name} />
-      <div className="product-detail-info">
-        {product.sku && <p className="product-sku">SKU · {product.sku}</p>}
-        <h2>{locale === 'hy' ? 'Տեխնիկական տվյալներ' : 'Technical specifications'}</h2>
-        {Object.keys(specs).length ? <dl>{Object.entries(specs).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl> : <p>{locale === 'hy' ? 'Տեխնիկական տվյալները ճշտվում են։' : 'Technical data is being prepared.'}</p>}
-        {product.documents?.length ? <div className="product-documents"><h3>{locale === 'hy' ? 'Փաստաթղթեր' : 'Documents'}</h3>{product.documents.map((document) => <a key={document.url} href={document.url} target="_blank" rel="noreferrer"><FileText />{document.name || 'PDF'}</a>)}</div> : null}
-        <Link className="button button-primary dark-button" to={`/contact?product=${encodeURIComponent(translation.name)}`}>{locale === 'hy' ? 'Ստանալ առաջարկ' : 'Request a quote'}<ArrowRight /></Link>
+    <section className="section product-detail-section"><div className="container">
+      <nav className="product-breadcrumb" aria-label={locale === 'hy' ? 'Նավիգացիոն ուղի' : 'Breadcrumb'}>
+        <Link to="/">{locale === 'hy' ? 'Գլխավոր' : 'Home'}</Link><ChevronRight />
+        <Link to="/products">{locale === 'hy' ? 'Ապրանքներ' : 'Products'}</Link><ChevronRight />
+        {categoryName ? <><span>{categoryName}</span><ChevronRight /></> : null}
+        <strong>{translation.name}</strong>
+      </nav>
+      <div className="product-detail-grid">
+        <ProductGallery product={product} locale={locale} productName={translation.name} key={product.id} />
+        <ProductInformation product={product} locale={locale} productName={translation.name} description={translation.description || copy.productsPage.lead} key={product.id} />
       </div>
     </div></section>
+    {relatedProducts.length ? <section className="section soft-section related-products-section"><div className="container">
+      <div className="section-heading related-products-heading"><Eyebrow>{locale === 'hy' ? 'ՆՈՒՅՆ ԿԱՏԵԳՈՐԻԱՅԻՑ' : 'FROM THE SAME CATEGORY'}</Eyebrow><h2>{locale === 'hy' ? 'Հարակից ապրանքներ' : 'Related products'}</h2></div>
+      <div className="public-product-grid">{relatedProducts.map((relatedProduct) => <ProductCard product={relatedProduct} locale={locale} key={relatedProduct.id} />)}</div>
+    </div></section> : null}
   </>
 }
 

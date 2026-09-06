@@ -67,6 +67,7 @@ export type Product = {
   images: ProductAsset[] | null
   documents: ProductAsset[] | null
   category?: ProductCategory | null
+  related_products?: Product[]
   updated_at: string
 }
 
