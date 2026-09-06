@@ -18,6 +18,7 @@ import { AdminInquiriesPage } from './pages/admin/AdminInquiriesPage'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminMediaPage } from './pages/admin/AdminMediaPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
+import { ComparePage } from './pages/ComparePage'
 
 function ScrollToTop() {
   const location = useLocation()
@@ -59,6 +60,7 @@ function App() {
           <Route path="solutions" element={<SolutionsPage copy={copy} locale={locale} />} />
           <Route path="products" element={<ProductsPage copy={copy} locale={locale} />} />
           <Route path="products/:slug" element={<ProductDetailPage copy={copy} locale={locale} />} />
+          <Route path="compare" element={<ComparePage copy={copy} locale={locale} />} />
           <Route path="contact" element={<ContactPage copy={copy} locale={locale} />} />
         </Route>
         <Route path="admin/login" element={<AdminLoginPage />} />

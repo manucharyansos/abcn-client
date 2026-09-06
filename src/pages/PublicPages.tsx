@@ -1,11 +1,12 @@
 import { type FormEvent, type MouseEvent as ReactMouseEvent, useEffect, useState } from 'react'
 import {
-  ArrowRight, Cable, ChevronRight, CircleGauge, FileText,
-  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, ScanSearch, Search, Send, SlidersHorizontal, X,
+  ArrowRight, Cable, Check, ChevronRight, CircleGauge, FileText,
+  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, Scale, ScanSearch, Search, Send, SlidersHorizontal, X,
 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, type AdminPage, type CatalogFacet, type PageLocaleContent, type Product, type ProductCategory } from '../api'
 import { company, type Locale, type SiteCopy } from '../content'
+import { useProductComparison } from '../productComparison'
 
 const directionIcons = [Cable, SlidersHorizontal, CircleGauge, Network]
 
@@ -87,22 +88,43 @@ function ProductGallery({ product, locale, productName }: { product: Product; lo
   </div>
 }
 
-function ProductCard({ product, locale }: { product: Product; locale: Locale }) {
+function ProductCard({
+  product,
+  locale,
+  comparisonSelected = false,
+  comparisonDisabled = false,
+  onCompare,
+}: {
+  product: Product
+  locale: Locale
+  comparisonSelected?: boolean
+  comparisonDisabled?: boolean
+  onCompare?: (product: Product) => void
+}) {
   const translation = product.translations[locale] ?? product.translations.en
   const image = productAssetUrl(product)
 
-  return <Link className="public-product-card" to={`/products/${product.slug}`}>
-    <div className="public-product-image">
-      {image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}
-      {product.featured ? <span>{locale === 'hy' ? 'Ընտրված' : 'Featured'}</span> : null}
-    </div>
-    <div className="public-product-copy">
-      <small>{product.category?.translations?.[locale]?.name || product.sku}</small>
-      <h2>{translation.name}</h2>
-      <p>{translation.description}</p>
-      <strong>{locale === 'hy' ? 'Տեսնել մանրամասները' : 'View details'}<ArrowRight /></strong>
-    </div>
-  </Link>
+  return <article className={`public-product-card${comparisonSelected ? ' is-compared' : ''}`}>
+    <Link className="public-product-card-link" to={`/products/${product.slug}`}>
+      <div className="public-product-image">
+        {image ? <img src={image} alt={product.images?.[0]?.alt?.[locale] || translation.name} /> : <PackageSearch />}
+        {product.featured ? <span>{locale === 'hy' ? 'Ընտրված' : 'Featured'}</span> : null}
+      </div>
+      <div className="public-product-copy">
+        <small>{product.category?.translations?.[locale]?.name || product.sku}</small>
+        <h2>{translation.name}</h2>
+        <p>{translation.description}</p>
+        <strong>{locale === 'hy' ? 'Տեսնել մանրամասները' : 'View details'}<ArrowRight /></strong>
+      </div>
+    </Link>
+    {onCompare ? <button
+      type="button"
+      className="product-compare-toggle"
+      aria-pressed={comparisonSelected}
+      disabled={comparisonDisabled}
+      onClick={() => onCompare(product)}
+    >{comparisonSelected ? <Check /> : <Scale />}{comparisonSelected ? (locale === 'hy' ? 'Ընտրված է' : 'Selected') : (locale === 'hy' ? 'Համեմատել' : 'Compare')}</button> : null}
+  </article>
 }
 
 type ProductInfoTab = 'overview' | 'specifications' | 'documents'
@@ -373,6 +395,8 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
+  const comparison = useProductComparison()
+  const [comparisonLimitReached, setComparisonLimitReached] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -455,6 +479,11 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
     }
   }
 
+  function toggleComparison(product: Product) {
+    const changed = comparison.toggle(product.slug)
+    setComparisonLimitReached(!changed)
+  }
+
   const flatCategories = flattenCategories(categories)
   const selectedCategoryRecord = flatCategories.find((category) => category.id === selectedCategory)
   const activeRootId = selectedCategoryRecord?.parent_id ?? selectedCategoryRecord?.id ?? null
@@ -504,7 +533,17 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
                 {activeFilterCount ? <button type="button" className="technical-filter-reset" onClick={() => setActiveFilters({})}><RotateCw />{locale === 'hy' ? 'Մաքրել տեխնիկական ֆիլտրերը' : 'Reset technical filters'}</button> : null}
               </aside> : null}
               <div className="catalog-results-main">
-                <div className="public-product-grid">{products.map((product) => <ProductCard product={product} locale={locale} key={product.id} />)}</div>
+                <div className="public-product-grid">{products.map((product) => {
+                  const selected = comparison.isSelected(product.slug)
+                  return <ProductCard
+                    product={product}
+                    locale={locale}
+                    comparisonSelected={selected}
+                    comparisonDisabled={!selected && comparison.slugs.length >= comparison.limit}
+                    onCompare={toggleComparison}
+                    key={product.id}
+                  />
+                })}</div>
                 {currentPage < lastPage ? <button className="button catalog-more" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle className="spin" /> : null}{loadingMore ? (locale === 'hy' ? 'Բեռնվում է…' : 'Loading…') : (locale === 'hy' ? 'Ցույց տալ ավելին' : 'Show more')}</button> : null}
                 {catalogError ? <p className="catalog-inline-error" role="alert">{locale === 'hy' ? 'Հաջորդ ապրանքները չբեռնվեցին։ Փորձեք կրկին։' : 'More products could not be loaded. Please try again.'}</p> : null}
               </div>
@@ -522,6 +561,19 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
         </div>
       </section>
       <ClosingCta copy={copy} />
+      {comparison.slugs.length ? <aside className="comparison-bar" aria-label={locale === 'hy' ? 'Ապրանքների համեմատում' : 'Product comparison'}>
+        <div className="comparison-bar-inner">
+          <div className="comparison-bar-count"><Scale /><div><strong>{locale === 'hy' ? 'Ապրանքների համեմատում' : 'Product comparison'}</strong><span>{comparisonLimitReached
+            ? (locale === 'hy' ? 'Կարելի է ընտրել առավելագույնը 4 ապրանք' : 'You can select up to 4 products')
+            : (locale === 'hy' ? `${comparison.slugs.length} / ${comparison.limit} ընտրված` : `${comparison.slugs.length} / ${comparison.limit} selected`)}</span></div></div>
+          <div className="comparison-bar-actions">
+            <button type="button" className="comparison-clear" onClick={() => { comparison.clear(); setComparisonLimitReached(false) }}>{locale === 'hy' ? 'Մաքրել' : 'Clear'}</button>
+            {comparison.slugs.length >= 2
+              ? <Link className="button button-primary" to={`/compare?products=${encodeURIComponent(comparison.slugs.join(','))}`}>{locale === 'hy' ? 'Համեմատել' : 'Compare'}<ArrowRight /></Link>
+              : <span className="comparison-more-hint">{locale === 'hy' ? 'Ընտրեք ևս մեկ ապրանք' : 'Select one more product'}</span>}
+          </div>
+        </div>
+      </aside> : null}
     </>
   )
 }

@@ -161,6 +161,11 @@ export const api = {
   getPublicCategories: () => request<ProductCategory[]>('/product-categories'),
   getPublicProducts: (params: PublicProductParams = {}) => request<CatalogPage>(catalogPath(params)),
   getPublicProduct: (slug: string) => request<Product>(`/products/${slug}`),
+  getProductComparison: (slugs: string[]) => {
+    const query = new URLSearchParams()
+    slugs.forEach((slug) => query.append('slugs[]', slug))
+    return request<Product[]>(`/products/compare?${query.toString()}`)
+  },
 
   login: (email: string, password: string) =>
     request<{ token: string; user: { name: string; email: string } }>('/admin/login', {
