@@ -28,6 +28,19 @@ function withQuery(path: string, params: Record<string, string | number | undefi
   return suffix ? `${path}?${suffix}` : path
 }
 
+function catalogPath(params: PublicProductParams) {
+  const query = new URLSearchParams()
+  if (params.page) query.set('page', String(params.page))
+  if (params.category) query.set('category', String(params.category))
+  if (params.search) query.set('search', params.search)
+  if (params.locale) query.set('locale', params.locale)
+  Object.entries(params.filters ?? {}).forEach(([key, value]) => {
+    if (value) query.set(`filters[${key}]`, value)
+  })
+  const suffix = query.toString()
+  return suffix ? `/products?${suffix}` : '/products'
+}
+
 export type Status = 'draft' | 'published' | 'archived'
 export type PageLocaleContent = { eyebrow: string; title: string; lead: string; body: string }
 export type PageMeta = { title: string; description: string }
@@ -54,6 +67,14 @@ export type ProductCategory = {
 
 export type ProductTranslation = { name: string; description?: string }
 export type ProductAsset = { url: string; name?: string; alt?: { hy?: string; en?: string } }
+export type ProductFilterAttribute = {
+  id?: number
+  key: string
+  option: string
+  label: { hy: string; en: string }
+  value: { hy: string; en: string }
+  sort_order: number
+}
 export type Product = {
   id: number
   product_category_id: number | null
@@ -64,6 +85,7 @@ export type Product = {
   sort_order: number
   translations: { hy: ProductTranslation; en: ProductTranslation }
   specifications: { hy?: Record<string, string>; en?: Record<string, string> } | null
+  filter_attributes?: ProductFilterAttribute[]
   images: ProductAsset[] | null
   documents: ProductAsset[] | null
   category?: ProductCategory | null
@@ -88,6 +110,22 @@ export type Paginated<T> = {
   last_page: number
   total: number
   per_page: number
+}
+
+export type CatalogFacet = {
+  key: string
+  label: { hy: string; en: string }
+  sort_order: number
+  options: { value: string; label: { hy: string; en: string }; count: number }[]
+}
+
+export type CatalogPage = Paginated<Product> & { facets: CatalogFacet[] }
+export type PublicProductParams = {
+  page?: number
+  category?: number
+  search?: string
+  locale?: 'hy' | 'en'
+  filters?: Record<string, string>
 }
 
 export type ContactRequestPayload = {
@@ -121,7 +159,7 @@ export const api = {
 
   getPublicPage: (slug: string) => request<AdminPage>(`/pages/${slug}`),
   getPublicCategories: () => request<ProductCategory[]>('/product-categories'),
-  getPublicProducts: (page = 1) => request<Paginated<Product>>(`/products?page=${page}`),
+  getPublicProducts: (params: PublicProductParams = {}) => request<CatalogPage>(catalogPath(params)),
   getPublicProduct: (slug: string) => request<Product>(`/products/${slug}`),
 
   login: (email: string, password: string) =>

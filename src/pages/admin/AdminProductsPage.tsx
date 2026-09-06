@@ -1,17 +1,17 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, FileText, Image, PackageSearch, Plus, Save, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, FileText, Image, PackageSearch, Plus, Save, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { AdminContext } from '../../admin/AdminLayout'
 import { AdminError, AdminLoading, AdminPageHeading, AdminSuccess, Pagination } from '../../admin/shared'
 import { slugify } from '../../admin/utils'
-import { api, type MediaAsset, type Paginated, type Product, type ProductAsset, type ProductCategory, type Status } from '../../api'
+import { api, type MediaAsset, type Paginated, type Product, type ProductAsset, type ProductCategory, type ProductFilterAttribute, type Status } from '../../api'
 
 type ProductDraft = Omit<Product, 'id' | 'updated_at' | 'category'> & { id?: number }
 
 const emptyProduct = (): ProductDraft => ({
   product_category_id: null, slug: '', sku: '', status: 'draft', featured: false, sort_order: 0,
   translations: { hy: { name: '', description: '' }, en: { name: '', description: '' } },
-  specifications: { hy: {}, en: {} }, images: [], documents: [],
+  specifications: { hy: {}, en: {} }, filter_attributes: [], images: [], documents: [],
 })
 
 function normalizeProduct(product: Product): ProductDraft {
@@ -28,6 +28,7 @@ function normalizeProduct(product: Product): ProductDraft {
       en: { name: product.translations.en?.name ?? '', description: product.translations.en?.description ?? '' },
     },
     specifications: { hy: product.specifications?.hy ?? {}, en: product.specifications?.en ?? {} },
+    filter_attributes: product.filter_attributes ?? [],
     images: product.images ?? [],
     documents: product.documents ?? [],
   }
@@ -46,6 +47,13 @@ function textToSpecs(value: string) {
 
 function mediaToAsset(media: MediaAsset): ProductAsset {
   return { url: media.url, name: media.original_name, alt: media.alt ?? undefined }
+}
+
+function emptyFilterAttribute(sortOrder: number): ProductFilterAttribute {
+  return {
+    key: '', option: '', sort_order: sortOrder,
+    label: { hy: '', en: '' }, value: { hy: '', en: '' },
+  }
 }
 
 function AssetPicker({ label, icon: Icon, assets, media, kind, maxItems, onAdd, onMove, onRemove }: {
@@ -125,7 +133,13 @@ export function AdminProductsPage() {
     setSaving(true)
     setSuccess('')
     try {
-      const saved = await api.saveProduct(token, draft)
+      const filterAttributes = (draft.filter_attributes ?? []).map((attribute, index) => ({
+        ...attribute,
+        key: slugify(attribute.key || attribute.label.en),
+        option: slugify(attribute.value.en),
+        sort_order: index,
+      }))
+      const saved = await api.saveProduct(token, { ...draft, filter_attributes: filterAttributes })
       setDraft(normalizeProduct(saved))
       await loadProducts()
       setSuccess('Ապրանքը պահպանվել է։')
@@ -164,6 +178,13 @@ export function AdminProductsPage() {
     })
   }
 
+  function updateFilterAttribute(index: number, update: (attribute: ProductFilterAttribute) => ProductFilterAttribute) {
+    setDraft((current) => ({
+      ...current,
+      filter_attributes: (current.filter_attributes ?? []).map((attribute, attributeIndex) => attributeIndex === index ? update(attribute) : attribute),
+    }))
+  }
+
   return (
     <>
       <AdminPageHeading eyebrow="ԿԱՏԱԼՈԳ" title="Ապրանքներ" action={<button className="admin-primary-button" onClick={() => { setDraft(emptyProduct()); setSuccess('') }}><Plus />Նոր ապրանք</button>} />
@@ -199,6 +220,25 @@ export function AdminProductsPage() {
               <label><span>Բնութագրեր՝ մեկ տողով «Անվանում: արժեք»</span><textarea rows={7} value={specsToText(draft.specifications?.[locale])} onChange={(event) => setDraft({ ...draft, specifications: { ...draft.specifications, [locale]: textToSpecs(event.target.value) } })} placeholder={locale === 'hy' ? 'Լարում: 230 V\nՀոսանք: 16 A' : 'Voltage: 230 V\nCurrent: 16 A'} /></label>
             </section>)}
           </div>
+          <section className="admin-filter-editor">
+            <div className="admin-filter-heading">
+              <div><SlidersHorizontal /><div><strong>Կատալոգի տեխնիկական ֆիլտրեր</strong><p>Ավելացրեք միայն այն հատկանիշները, որոնցով հաճախորդը պետք է կարողանա ֆիլտրել ապրանքները։</p></div></div>
+              <button type="button" className="admin-secondary-button" onClick={() => setDraft((current) => ({ ...current, filter_attributes: [...(current.filter_attributes ?? []), emptyFilterAttribute(current.filter_attributes?.length ?? 0)] }))}><Plus />Ավելացնել ֆիլտր</button>
+            </div>
+            {(draft.filter_attributes ?? []).length ? <div className="admin-filter-list">{(draft.filter_attributes ?? []).map((attribute, index) => <article className="admin-filter-row" key={`${attribute.id ?? 'new'}-${index}`}>
+              <div className="admin-filter-row-top">
+                <label><span>Խմբի կոդ</span><input value={attribute.key} onChange={(event) => updateFilterAttribute(index, (current) => ({ ...current, key: slugify(event.target.value) }))} placeholder="rated-current" required /></label>
+                <button type="button" className="admin-icon-danger" title="Հեռացնել ֆիլտրը" onClick={() => setDraft((current) => ({ ...current, filter_attributes: (current.filter_attributes ?? []).filter((_, attributeIndex) => attributeIndex !== index) }))}><Trash2 /></button>
+              </div>
+              <div className="admin-filter-locales">
+                {(['hy', 'en'] as const).map((filterLocale) => <div key={filterLocale}>
+                  <span>{filterLocale.toUpperCase()}</span>
+                  <label><span>Ֆիլտրի անվանում</span><input value={attribute.label[filterLocale]} onChange={(event) => updateFilterAttribute(index, (current) => ({ ...current, label: { ...current.label, [filterLocale]: event.target.value } }))} placeholder={filterLocale === 'hy' ? 'Նոմինալ հոսանք' : 'Rated current'} required /></label>
+                  <label><span>Այս ապրանքի արժեք</span><input value={attribute.value[filterLocale]} onChange={(event) => updateFilterAttribute(index, (current) => ({ ...current, value: { ...current.value, [filterLocale]: event.target.value } }))} placeholder="16 A" required /></label>
+                </div>)}
+              </div>
+            </article>)}</div> : <div className="admin-filter-empty"><SlidersHorizontal /><span>Այս ապրանքի համար տեխնիկական ֆիլտր դեռ ավելացված չէ։</span></div>}
+          </section>
           <AssetPicker label="Ապրանքի նկարներ" icon={Image} assets={draft.images ?? []} media={media} kind="image" maxItems={4} onAdd={(asset) => setDraft((current) => ({ ...current, images: [...(current.images ?? []), asset].slice(0, 4) }))} onMove={moveImage} onRemove={(index) => setDraft((current) => ({ ...current, images: (current.images ?? []).filter((_, itemIndex) => itemIndex !== index) }))} />
           <AssetPicker label="PDF փաստաթղթեր" icon={FileText} assets={draft.documents ?? []} media={media} kind="document" onAdd={(asset) => setDraft({ ...draft, documents: [...(draft.documents ?? []), asset] })} onRemove={(index) => setDraft({ ...draft, documents: (draft.documents ?? []).filter((_, itemIndex) => itemIndex !== index) })} />
         </form>

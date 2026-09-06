@@ -1,10 +1,10 @@
 import { type FormEvent, type MouseEvent as ReactMouseEvent, useEffect, useState } from 'react'
 import {
   ArrowRight, Cable, ChevronRight, CircleGauge, FileText,
-  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, ScanSearch, Send, SlidersHorizontal,
+  Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, ScanSearch, Search, Send, SlidersHorizontal, X,
 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { api, type AdminPage, type PageLocaleContent, type Product, type ProductCategory } from '../api'
+import { api, type AdminPage, type CatalogFacet, type PageLocaleContent, type Product, type ProductCategory } from '../api'
 import { company, type Locale, type SiteCopy } from '../content'
 
 const directionIcons = [Cable, SlidersHorizontal, CircleGauge, Network]
@@ -35,10 +35,6 @@ function useManagedPage(slug: string, locale: Locale, fallbackTitle: string, fal
 
 function flattenCategories(categories: ProductCategory[]): ProductCategory[] {
   return categories.flatMap((category) => [category, ...flattenCategories(category.children ?? [])])
-}
-
-function categoryBranchIds(category: ProductCategory): number[] {
-  return [category.id, ...(category.children ?? []).flatMap(categoryBranchIds)]
 }
 
 function productAssetUrl(product: Product) {
@@ -365,31 +361,74 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
   const icons = [Layers3, SlidersHorizontal, FileText, Send]
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
+  const [facets, setFacets] = useState<CatalogFacet[]>([])
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [search, setSearch] = useState('')
+  const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [catalogError, setCatalogError] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let active = true
-    Promise.all([api.getPublicProducts(), api.getPublicCategories()]).then(([productData, categoryData]) => {
+    api.getPublicCategories().then((categoryData) => { if (active) setCategories(categoryData) }).catch(() => undefined)
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    // oxlint-disable-next-line react/set-state-in-effect
+    setLoading(true)
+    setCatalogError(false)
+    api.getPublicProducts({
+      category: selectedCategory ?? undefined,
+      search: query || undefined,
+      locale,
+      filters: activeFilters,
+    }).then((productData) => {
       if (!active) return
       setProducts(productData.data)
-      setCategories(categoryData)
+      setFacets(productData.facets)
       setCurrentPage(productData.current_page)
       setLastPage(productData.last_page)
-    }).catch(() => { if (active) setCatalogError(true) }).finally(() => { if (active) setLoading(false) })
+      setTotal(productData.total)
+    }).catch(() => {
+      if (!active) return
+      setProducts([])
+      setFacets([])
+      setTotal(0)
+      setCatalogError(true)
+    }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [reloadKey])
+  }, [activeFilters, locale, query, reloadKey, selectedCategory])
 
   function retryCatalog() {
     setLoading(true)
     setCatalogError(false)
-    setProducts([])
     setReloadKey((value) => value + 1)
+  }
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setActiveFilters({})
+    setQuery(search.trim())
+  }
+
+  function selectCategory(categoryId: number | null) {
+    setSelectedCategory(categoryId)
+    setActiveFilters({})
+  }
+
+  function clearCatalogFilters() {
+    setSearch('')
+    setQuery('')
+    setSelectedCategory(null)
+    setActiveFilters({})
   }
 
   async function loadMore() {
@@ -397,10 +436,18 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
     setLoadingMore(true)
     setCatalogError(false)
     try {
-      const result = await api.getPublicProducts(currentPage + 1)
+      const result = await api.getPublicProducts({
+        page: currentPage + 1,
+        category: selectedCategory ?? undefined,
+        search: query || undefined,
+        locale,
+        filters: activeFilters,
+      })
       setProducts((current) => [...current, ...result.data])
+      setFacets(result.facets)
       setCurrentPage(result.current_page)
       setLastPage(result.last_page)
+      setTotal(result.total)
     } catch {
       setCatalogError(true)
     } finally {
@@ -412,15 +459,32 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
   const selectedCategoryRecord = flatCategories.find((category) => category.id === selectedCategory)
   const activeRootId = selectedCategoryRecord?.parent_id ?? selectedCategoryRecord?.id ?? null
   const activeRoot = categories.find((category) => category.id === activeRootId)
-  const selectedCategoryIds = selectedCategoryRecord ? new Set(categoryBranchIds(selectedCategoryRecord)) : null
-  const visibleProducts = selectedCategoryIds
-    ? products.filter((product) => product.product_category_id !== null && selectedCategoryIds.has(product.product_category_id))
-    : products
+  const activeFilterCount = Object.values(activeFilters).filter(Boolean).length
+  const hasCatalogCriteria = Boolean(query || selectedCategory !== null || activeFilterCount)
   return (
     <>
       <PageHero eyebrow={managed.eyebrow || copy.productsPage.eyebrow} title={managed.title || copy.productsPage.title} lead={managed.lead || copy.productsPage.lead} />
       <section className="section products-preview">
         <div className="container">
+          <div className="catalog-tools">
+            <form className="catalog-search" onSubmit={submitSearch} role="search">
+              <Search aria-hidden="true" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={locale === 'hy' ? 'Որոնել անվանումով, մոդելով կամ SKU-ով' : 'Search by name, model or SKU'} aria-label={locale === 'hy' ? 'Որոնել կատալոգում' : 'Search catalog'} />
+              {search ? <button type="button" className="catalog-search-clear" aria-label={locale === 'hy' ? 'Մաքրել որոնումը' : 'Clear search'} onClick={() => { setSearch(''); setQuery('') }}><X /></button> : null}
+              <button type="submit" className="button button-primary dark-button">{locale === 'hy' ? 'Որոնել' : 'Search'}</button>
+            </form>
+            {categories.length ? <div className="catalog-filter-groups">
+              <div className="catalog-filters" aria-label={locale === 'hy' ? 'Ապրանքների կատեգորիաներ' : 'Product categories'}>
+                <button className={selectedCategory === null ? 'active' : ''} onClick={() => selectCategory(null)}>{locale === 'hy' ? 'Բոլորը' : 'All products'}</button>
+                {categories.map((category) => <button key={category.id} className={activeRoot?.id === category.id ? 'active' : ''} onClick={() => selectCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
+              </div>
+              {activeRoot?.children?.length ? <div className="catalog-subfilters" aria-label={locale === 'hy' ? 'Ապրանքների ենթակատեգորիաներ' : 'Product subcategories'}>
+                <span>{locale === 'hy' ? 'Ենթակատեգորիաներ' : 'Subcategories'}</span>
+                <button className={selectedCategory === activeRoot.id ? 'active' : ''} onClick={() => selectCategory(activeRoot.id)}>{locale === 'hy' ? 'Բոլորը բաժնում' : 'All in category'}</button>
+                {activeRoot.children.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => selectCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
+              </div> : null}
+            </div> : null}
+          </div>
           {loading && <div className="catalog-loading" role="status"><LoaderCircle />{locale === 'hy' ? 'Կատալոգը բեռնվում է…' : 'Loading catalog…'}</div>}
           {!loading && catalogError && products.length === 0 ? <div className="catalog-message" role="alert">
             <PackageSearch />
@@ -429,21 +493,23 @@ export function ProductsPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
             <button className="button button-outline-blue" type="button" onClick={retryCatalog}><RotateCw />{locale === 'hy' ? 'Փորձել կրկին' : 'Try again'}</button>
           </div> : null}
           {!loading && products.length > 0 ? <>
-            <div className="catalog-filter-groups">
-              <div className="catalog-filters" aria-label={locale === 'hy' ? 'Ապրանքների կատեգորիաներ' : 'Product categories'}>
-                <button className={selectedCategory === null ? 'active' : ''} onClick={() => setSelectedCategory(null)}>{locale === 'hy' ? 'Բոլորը' : 'All products'}</button>
-                {categories.map((category) => <button key={category.id} className={activeRoot?.id === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
+            <div className="catalog-result-bar"><strong>{locale === 'hy' ? `${total} ապրանք` : `${total} products`}</strong>{hasCatalogCriteria ? <button type="button" onClick={clearCatalogFilters}><X />{locale === 'hy' ? 'Մաքրել բոլորը' : 'Clear all'}</button> : null}</div>
+            <div className={`catalog-results-layout ${facets.length ? '' : 'without-facets'}`}>
+              {facets.length ? <aside className="technical-filter-panel">
+                <div className="technical-filter-title"><SlidersHorizontal /><div><strong>{locale === 'hy' ? 'Տեխնիկական ֆիլտրեր' : 'Technical filters'}</strong><span>{activeFilterCount ? (locale === 'hy' ? `${activeFilterCount} ընտրված` : `${activeFilterCount} selected`) : (locale === 'hy' ? 'Ընտրեք անհրաժեշտ արժեքները' : 'Choose required values')}</span></div></div>
+                {facets.map((facet) => <label className="technical-filter-field" key={facet.key}><span>{facet.label[locale] || facet.label.en}</span><select value={activeFilters[facet.key] ?? ''} onChange={(event) => setActiveFilters((current) => ({ ...current, [facet.key]: event.target.value }))}>
+                  <option value="">{locale === 'hy' ? 'Բոլոր տարբերակները' : 'All options'}</option>
+                  {facet.options.map((option) => <option value={option.value} key={option.value}>{option.label[locale] || option.label.en} ({option.count})</option>)}
+                </select></label>)}
+                {activeFilterCount ? <button type="button" className="technical-filter-reset" onClick={() => setActiveFilters({})}><RotateCw />{locale === 'hy' ? 'Մաքրել տեխնիկական ֆիլտրերը' : 'Reset technical filters'}</button> : null}
+              </aside> : null}
+              <div className="catalog-results-main">
+                <div className="public-product-grid">{products.map((product) => <ProductCard product={product} locale={locale} key={product.id} />)}</div>
+                {currentPage < lastPage ? <button className="button catalog-more" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle className="spin" /> : null}{loadingMore ? (locale === 'hy' ? 'Բեռնվում է…' : 'Loading…') : (locale === 'hy' ? 'Ցույց տալ ավելին' : 'Show more')}</button> : null}
+                {catalogError ? <p className="catalog-inline-error" role="alert">{locale === 'hy' ? 'Հաջորդ ապրանքները չբեռնվեցին։ Փորձեք կրկին։' : 'More products could not be loaded. Please try again.'}</p> : null}
               </div>
-              {activeRoot?.children?.length ? <div className="catalog-subfilters" aria-label={locale === 'hy' ? 'Ապրանքների ենթակատեգորիաներ' : 'Product subcategories'}>
-                <span>{locale === 'hy' ? 'Ենթակատեգորիաներ' : 'Subcategories'}</span>
-                <button className={selectedCategory === activeRoot.id ? 'active' : ''} onClick={() => setSelectedCategory(activeRoot.id)}>{locale === 'hy' ? 'Բոլորը բաժնում' : 'All in category'}</button>
-                {activeRoot.children.map((category) => <button key={category.id} className={selectedCategory === category.id ? 'active' : ''} onClick={() => setSelectedCategory(category.id)}>{category.translations[locale]?.name || category.translations.en.name}</button>)}
-              </div> : null}
             </div>
-            {visibleProducts.length ? <div className="public-product-grid">{visibleProducts.map((product) => <ProductCard product={product} locale={locale} key={product.id} />)}</div> : <div className="catalog-empty">{locale === 'hy' ? 'Այս կատեգորիայում ապրանք դեռ չկա։' : 'There are no products in this category yet.'}</div>}
-            {currentPage < lastPage ? <button className="button catalog-more" type="button" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? <LoaderCircle className="spin" /> : null}{loadingMore ? (locale === 'hy' ? 'Բեռնվում է…' : 'Loading…') : (locale === 'hy' ? 'Ցույց տալ ավելին' : 'Show more')}</button> : null}
-            {catalogError ? <p className="catalog-inline-error" role="alert">{locale === 'hy' ? 'Հաջորդ ապրանքները չբեռնվեցին։ Փորձեք կրկին։' : 'More products could not be loaded. Please try again.'}</p> : null}
-          </> : !loading && !catalogError && <>
+          </> : !loading && !catalogError && hasCatalogCriteria ? <div className="catalog-message catalog-no-results"><PackageSearch /><h2>{locale === 'hy' ? 'Համապատասխան ապրանք չի գտնվել' : 'No matching products found'}</h2><p>{locale === 'hy' ? 'Փոխեք որոնման բառը, կատեգորիան կամ տեխնիկական ֆիլտրերը։' : 'Change the search term, category, or technical filters.'}</p><button className="button button-outline-blue" type="button" onClick={clearCatalogFilters}>{locale === 'hy' ? 'Մաքրել ֆիլտրերը' : 'Clear filters'}</button></div> : !loading && !catalogError && <>
             <div className="catalog-status"><span className="status-dot" />{copy.productsPage.status}</div>
             <div className="product-feature-grid">
             {copy.productsPage.features.map(([title, text], index) => {
