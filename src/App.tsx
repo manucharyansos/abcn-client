@@ -9,8 +9,10 @@ import {
   HomePage,
   ProductDetailPage,
   ProductsPage,
-  SolutionsPage,
 } from './pages/PublicPages'
+import {
+  NewsDetailPage, NewsPage, ProjectDetailPage, ProjectsPage, ServiceDetailPage, ServicesPage,
+} from './pages/ManagedContentPages'
 import { AdminCategoriesPage } from './pages/admin/AdminCategoriesPage'
 import { AdminContentPage } from './pages/admin/AdminContentPage'
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage'
@@ -18,6 +20,7 @@ import { AdminInquiriesPage } from './pages/admin/AdminInquiriesPage'
 import { AdminLoginPage } from './pages/admin/AdminLoginPage'
 import { AdminMediaPage } from './pages/admin/AdminMediaPage'
 import { AdminProductsPage } from './pages/admin/AdminProductsPage'
+import { AdminEntriesPage } from './pages/admin/AdminEntriesPage'
 import { ComparePage } from './pages/ComparePage'
 
 function ScrollToTop() {
@@ -57,7 +60,13 @@ function App() {
         >
           <Route index element={<HomePage copy={copy} locale={locale} />} />
           <Route path="about" element={<AboutPage copy={copy} locale={locale} />} />
-          <Route path="solutions" element={<SolutionsPage copy={copy} locale={locale} />} />
+          <Route path="solutions" element={<Navigate to="/services" replace />} />
+          <Route path="services" element={<ServicesPage copy={copy} locale={locale} />} />
+          <Route path="services/:slug" element={<ServiceDetailPage copy={copy} locale={locale} />} />
+          <Route path="projects" element={<ProjectsPage copy={copy} locale={locale} />} />
+          <Route path="projects/:slug" element={<ProjectDetailPage copy={copy} locale={locale} />} />
+          <Route path="news" element={<NewsPage copy={copy} locale={locale} />} />
+          <Route path="news/:slug" element={<NewsDetailPage copy={copy} locale={locale} />} />
           <Route path="products" element={<ProductsPage copy={copy} locale={locale} />} />
           <Route path="products/:slug" element={<ProductDetailPage copy={copy} locale={locale} />} />
           <Route path="compare" element={<ComparePage copy={copy} locale={locale} />} />
@@ -69,7 +78,10 @@ function App() {
           <Route path="inquiries" element={<AdminInquiriesPage />} />
           <Route path="content" element={<AdminContentPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="services" element={<AdminEntriesPage kind="services" />} />
+          <Route path="projects" element={<AdminEntriesPage kind="projects" />} />
           <Route path="products" element={<AdminProductsPage />} />
+          <Route path="news" element={<AdminEntriesPage kind="news" />} />
           <Route path="media" element={<AdminMediaPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -38,8 +38,11 @@ The production output is written to `dist/`.
 
 - `/` — homepage
 - `/about` — company and leadership
-- `/solutions` — engineering directions
-- `/products` — prepared catalog structure
+- `/services` — managed engineering services with product catalog access
+- `/services/:slug` — published service details
+- `/projects` and `/projects/:slug` — managed project portfolio
+- `/news` and `/news/:slug` — managed news and updates
+- `/products` — technical product catalog (linked from Services)
 - `/products/:slug` — published product details and documents
 - `/contact` — project inquiry form
 - `/admin/login` — administration login
@@ -47,5 +50,8 @@ The production output is written to `dist/`.
 - `/admin/inquiries` — project inquiries
 - `/admin/content` — bilingual page and SEO editor
 - `/admin/categories` — product category editor
+- `/admin/services` — service editor and homepage visibility
+- `/admin/projects` — project editor and homepage visibility
 - `/admin/products` — product, specification and document editor
+- `/admin/news` — news editor and homepage visibility
 - `/admin/media` — image and PDF library

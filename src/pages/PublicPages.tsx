@@ -4,35 +4,13 @@ import {
   Layers3, LoaderCircle, Mail, MapPin, Network, PackageSearch, Phone, RotateCw, Scale, ScanSearch, Search, Send, SlidersHorizontal, X,
 } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { api, type AdminPage, type CatalogFacet, type PageLocaleContent, type Product, type ProductCategory } from '../api'
+import { api, type CatalogFacet, type EditorialEntry, type HomepageContent, type Product, type ProductCategory } from '../api'
+import { ClosingCta, Eyebrow, PageHero } from '../components/PublicUi'
 import { company, type Locale, type SiteCopy } from '../content'
+import { setDocumentMeta, useManagedPage } from '../hooks/useManagedPage'
 import { useProductComparison } from '../productComparison'
 
 const directionIcons = [Cable, SlidersHorizontal, CircleGauge, Network]
-
-function setDocumentMeta(title: string, description: string) {
-  document.title = `${title} | ABCN`
-  const meta = document.querySelector<HTMLMetaElement>('meta[name="description"]')
-  if (meta) meta.content = description
-}
-
-function useManagedPage(slug: string, locale: Locale, fallbackTitle: string, fallbackDescription: string) {
-  const [page, setPage] = useState<AdminPage | null>(null)
-
-  useEffect(() => {
-    let active = true
-    setDocumentMeta(fallbackTitle, fallbackDescription)
-    api.getPublicPage(slug).then((result) => {
-      if (!active) return
-      setPage(result)
-      const meta = result.meta?.[locale]
-      setDocumentMeta(meta?.title || fallbackTitle, meta?.description || fallbackDescription)
-    }).catch(() => undefined)
-    return () => { active = false }
-  }, [fallbackDescription, fallbackTitle, locale, slug])
-
-  return (page?.content[locale] ?? {}) as Partial<PageLocaleContent>
-}
 
 function flattenCategories(categories: ProductCategory[]): ProductCategory[] {
   return categories.flatMap((category) => [category, ...flattenCategories(category.children ?? [])])
@@ -88,7 +66,7 @@ function ProductGallery({ product, locale, productName }: { product: Product; lo
   </div>
 }
 
-function ProductCard({
+export function ProductCard({
   product,
   locale,
   comparisonSelected = false,
@@ -180,42 +158,38 @@ function ProductInformation({ product, locale, description }: { product: Product
   </div>
 }
 
-function Eyebrow({ children }: { children: string }) {
-  return <p className="eyebrow"><span />{children}</p>
-}
-
-function PageHero({ eyebrow, title, lead }: { eyebrow: string; title: string; lead: string }) {
-  return (
-    <section className="page-hero">
-      <div className="page-hero-grid" aria-hidden="true" />
-      <div className="container page-hero-inner">
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <h1>{title}</h1>
-        <p>{lead}</p>
-      </div>
-    </section>
-  )
-}
-
-function ClosingCta({ copy }: { copy: SiteCopy }) {
-  return (
-    <section className="closing-cta">
-      <div className="container closing-cta-inner">
-        <div>
-          <Eyebrow>{copy.cta.eyebrow}</Eyebrow>
-          <h2>{copy.cta.title}</h2>
-          <p>{copy.cta.body}</p>
-        </div>
-        <Link className="button button-light" to="/contact">
-          {copy.cta.action}<ArrowRight size={18} />
-        </Link>
-      </div>
-    </section>
-  )
-}
-
 export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
   const managed = useManagedPage('home', locale, copy.hero.title, copy.hero.body)
+  const [homeContent, setHomeContent] = useState<HomepageContent | null>()
+
+  useEffect(() => {
+    let active = true
+    api.getHomepageContent()
+      .then((result) => { if (active) setHomeContent(result) })
+      .catch(() => { if (active) setHomeContent(null) })
+    return () => { active = false }
+  }, [])
+
+  const services = homeContent?.services ?? []
+  const projects = homeContent?.projects ?? []
+  const products = homeContent?.products ?? []
+  const news = homeContent?.news ?? []
+
+  function entryTranslation(entry: EditorialEntry) {
+    return entry.translations[locale] ?? entry.translations.en
+  }
+
+  function entryImage(entry: EditorialEntry) {
+    return entry.images?.[0]
+  }
+
+  function formatEntryDate(value?: string | null) {
+    if (!value) return ''
+    return new Intl.DateTimeFormat(locale === 'hy' ? 'hy-AM' : 'en-US', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    }).format(new Date(value))
+  }
+
   return (
     <>
       <section className="home-hero">
@@ -249,27 +223,70 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
         </div>
       </section>
 
-      <section className="section directions-section">
+      {services.length || homeContent === null ? <section className="section directions-section">
         <div className="container">
           <div className="section-heading">
-            <Eyebrow>{copy.directions.eyebrow}</Eyebrow>
-            <h2>{copy.directions.title}</h2>
+            <Eyebrow>{services.length ? copy.homeContent.servicesEyebrow : copy.directions.eyebrow}</Eyebrow>
+            <h2>{services.length ? copy.homeContent.servicesTitle : copy.directions.title}</h2>
           </div>
           <div className="direction-grid">
-            {copy.directions.items.map((item, index) => {
-              const Icon = directionIcons[index]
-              return (
-                <article className="direction-card" key={item.index}>
-                  <div className="direction-card-top"><span>{item.index}</span><Icon size={26} strokeWidth={1.6} /></div>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                  <Link to="/solutions" aria-label={item.title}><ArrowRight size={19} /></Link>
-                </article>
-              )
+            {services.length ? services.map((service, index) => {
+              const Icon = directionIcons[index % directionIcons.length]
+              const translation = entryTranslation(service)
+              return <article className="direction-card" key={service.id}>
+                <div className="direction-card-top"><span>{String(index + 1).padStart(2, '0')}</span><Icon size={26} strokeWidth={1.6} /></div>
+                <h3>{translation.title}</h3>
+                <p>{translation.summary}</p>
+                <Link to={`/services/${service.slug}`} aria-label={translation.title}><ArrowRight size={19} /></Link>
+              </article>
+            }) : copy.directions.items.map((item, index) => {
+              const Icon = directionIcons[index % directionIcons.length]
+              return <article className="direction-card" key={item.index}>
+                <div className="direction-card-top"><span>{item.index}</span><Icon size={26} strokeWidth={1.6} /></div>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+                <Link to="/services" aria-label={item.title}><ArrowRight size={19} /></Link>
+              </article>
+            })}
+          </div>
+          {services.length ? <Link className="section-action-link" to="/services">{copy.homeContent.servicesAction}<ArrowRight /></Link> : null}
+        </div>
+      </section> : null}
+
+      {projects.length ? <section className="section home-projects-section">
+        <div className="container">
+          <div className="section-heading home-section-heading-row">
+            <div><Eyebrow>{copy.homeContent.projectsEyebrow}</Eyebrow><h2>{copy.homeContent.projectsTitle}</h2></div>
+            <Link className="text-link" to="/projects">{copy.homeContent.projectsAction}<ArrowRight /></Link>
+          </div>
+          <div className="home-project-grid">
+            {projects.map((project, index) => {
+              const translation = entryTranslation(project)
+              const image = entryImage(project)
+              return <Link className={`home-project-card${index === 0 ? ' featured' : ''}`} to={`/projects/${project.slug}`} key={project.id}>
+                {image ? <img src={image.url} alt={image.alt?.[locale] || translation.title} /> : <div className="home-card-placeholder"><Network /></div>}
+                <div className="home-project-overlay" />
+                <div className="home-project-copy">
+                  {project.completed_at ? <span>{formatEntryDate(project.completed_at)}</span> : null}
+                  <h3>{translation.title}</h3>
+                  <p>{translation.summary}</p>
+                  <strong>{copy.projectsPage.view}<ArrowRight /></strong>
+                </div>
+              </Link>
             })}
           </div>
         </div>
-      </section>
+      </section> : null}
+
+      {products.length ? <section className="section home-products-section">
+        <div className="container">
+          <div className="section-heading home-section-heading-row">
+            <div><Eyebrow>{copy.homeContent.productsEyebrow}</Eyebrow><h2>{copy.homeContent.productsTitle}</h2></div>
+            <Link className="text-link" to="/products">{copy.homeContent.productsAction}<ArrowRight /></Link>
+          </div>
+          <div className="public-product-grid">{products.map((product) => <ProductCard product={product} locale={locale} key={product.id} />)}</div>
+        </div>
+      </section> : null}
 
       <section className="section process-section">
         <div className="container process-layout">
@@ -287,7 +304,7 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
         </div>
       </section>
 
-      <section className="section catalog-teaser">
+      {!products.length ? <section className="section catalog-teaser">
         <div className="container catalog-teaser-inner">
           <div className="catalog-mark" aria-hidden="true"><Layers3 /><span>ABCN / CATALOG</span></div>
           <div>
@@ -297,7 +314,33 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
             <Link className="button button-outline" to="/products">{copy.productsTeaser.action}<ArrowRight size={18} /></Link>
           </div>
         </div>
-      </section>
+      </section> : null}
+
+      {news.length ? <section className="section home-news-section">
+        <div className="container">
+          <div className="section-heading home-section-heading-row">
+            <div><Eyebrow>{copy.homeContent.newsEyebrow}</Eyebrow><h2>{copy.homeContent.newsTitle}</h2></div>
+            <Link className="text-link" to="/news">{copy.homeContent.newsAction}<ArrowRight /></Link>
+          </div>
+          <div className="home-news-grid">
+            {news.map((article) => {
+              const translation = entryTranslation(article)
+              const image = entryImage(article)
+              return <article className="home-news-card" key={article.id}>
+                <Link className="home-news-image" to={`/news/${article.slug}`}>
+                  {image ? <img src={image.url} alt={image.alt?.[locale] || translation.title} /> : <div className="home-card-placeholder"><FileText /></div>}
+                </Link>
+                <div>
+                  {article.published_at ? <time dateTime={article.published_at}>{formatEntryDate(article.published_at)}</time> : null}
+                  <h3><Link to={`/news/${article.slug}`}>{translation.title}</Link></h3>
+                  <p>{translation.summary}</p>
+                  <Link className="text-link" to={`/news/${article.slug}`}>{copy.homeContent.readMore}<ArrowRight /></Link>
+                </div>
+              </article>
+            })}
+          </div>
+        </div>
+      </section> : null}
 
       <ClosingCta copy={copy} />
     </>

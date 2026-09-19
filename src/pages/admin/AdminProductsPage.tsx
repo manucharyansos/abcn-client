@@ -1,15 +1,16 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, FileText, Image, PackageSearch, Plus, Save, SlidersHorizontal, Trash2, X } from 'lucide-react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { PackageSearch, Plus, Save, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { useOutletContext } from 'react-router-dom'
 import type { AdminContext } from '../../admin/AdminLayout'
+import { AssetPicker } from '../../admin/AssetPicker'
 import { AdminError, AdminLoading, AdminPageHeading, AdminSuccess, Pagination } from '../../admin/shared'
 import { slugify } from '../../admin/utils'
-import { api, type MediaAsset, type Paginated, type Product, type ProductAsset, type ProductCategory, type ProductFilterAttribute, type Status } from '../../api'
+import { api, type MediaAsset, type Paginated, type Product, type ProductCategory, type ProductFilterAttribute, type Status } from '../../api'
 
 type ProductDraft = Omit<Product, 'id' | 'updated_at' | 'category'> & { id?: number }
 
 const emptyProduct = (): ProductDraft => ({
-  product_category_id: null, slug: '', sku: '', status: 'draft', featured: false, sort_order: 0,
+  product_category_id: null, slug: '', sku: '', status: 'draft', featured: false, show_on_homepage: false, sort_order: 0,
   translations: { hy: { name: '', description: '' }, en: { name: '', description: '' } },
   specifications: { hy: {}, en: {} }, filter_attributes: [], images: [], documents: [],
 })
@@ -22,6 +23,7 @@ function normalizeProduct(product: Product): ProductDraft {
     sku: product.sku ?? '',
     status: product.status,
     featured: product.featured,
+    show_on_homepage: Boolean(product.show_on_homepage),
     sort_order: product.sort_order,
     translations: {
       hy: { name: product.translations.hy?.name ?? '', description: product.translations.hy?.description ?? '' },
@@ -45,36 +47,11 @@ function textToSpecs(value: string) {
   }).filter((line): line is [string, string] => Boolean(line?.[0])))
 }
 
-function mediaToAsset(media: MediaAsset): ProductAsset {
-  return { url: media.url, name: media.original_name, alt: media.alt ?? undefined }
-}
-
 function emptyFilterAttribute(sortOrder: number): ProductFilterAttribute {
   return {
     key: '', option: '', sort_order: sortOrder,
     label: { hy: '', en: '' }, value: { hy: '', en: '' },
   }
-}
-
-function AssetPicker({ label, icon: Icon, assets, media, kind, maxItems, onAdd, onMove, onRemove }: {
-  label: string
-  icon: typeof Image
-  assets: ProductAsset[]
-  media: MediaAsset[]
-  kind: MediaAsset['kind']
-  maxItems?: number
-  onAdd: (asset: ProductAsset) => void
-  onMove?: (index: number, targetIndex: number) => void
-  onRemove: (index: number) => void
-}) {
-  const limitReached = maxItems !== undefined && assets.length >= maxItems
-
-  return (
-    <div className="admin-assets-field">
-      <div className="admin-assets-heading"><span>{label}{maxItems ? <small>{assets.length}/{maxItems}</small> : null}</span><select disabled={limitReached} value="" onChange={(event) => { const selected = media.find((item) => item.id === Number(event.target.value)); if (selected) onAdd(mediaToAsset(selected)) }}><option value="">{limitReached ? `Առավելագույնը ${maxItems} նկար` : 'Ավելացնել ֆայլերից…'}</option>{media.filter((item) => item.kind === kind && !assets.some((asset) => asset.url === item.url)).map((item) => <option key={item.id} value={item.id}>{item.original_name}</option>)}</select></div>
-      {assets.length ? <div className="admin-selected-assets">{assets.map((asset, index) => <div key={`${asset.url}-${index}`}>{kind === 'image' ? <img src={asset.url} alt="" /> : <FileText />}<span>{kind === 'image' && index === 0 ? 'Գլխավոր · ' : ''}{asset.name ?? asset.url}</span><div className="admin-asset-actions">{onMove ? <><button type="button" disabled={index === 0} title="Տեղափոխել վերև" onClick={() => onMove(index, index - 1)}><ChevronUp /></button><button type="button" disabled={index === assets.length - 1} title="Տեղափոխել ներքև" onClick={() => onMove(index, index + 1)}><ChevronDown /></button></> : null}<button type="button" title="Հեռացնել" onClick={() => onRemove(index)}><X /></button></div></div>)}</div> : <div className="admin-assets-empty"><Icon />Ընտրված ֆայլ չկա։ <Link to="/admin/media">Բեռնել ֆայլ</Link></div>}
-    </div>
-  )
 }
 
 export function AdminProductsPage() {
@@ -211,6 +188,7 @@ export function AdminProductsPage() {
             <label><span>Վիճակ</span><select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as Status })}><option value="draft">Սևագիր</option><option value="published">Հրապարակված</option><option value="archived">Արխիվ</option></select></label>
             <label><span>Հերթականություն</span><input type="number" min="0" value={draft.sort_order} onChange={(event) => setDraft({ ...draft, sort_order: Number(event.target.value) })} /></label>
             <label className="admin-checkbox"><input type="checkbox" checked={draft.featured} onChange={(event) => setDraft({ ...draft, featured: event.target.checked })} /><span>Ցուցադրել որպես ընտրված ապրանք</span></label>
+            <label className="admin-checkbox"><input type="checkbox" checked={draft.show_on_homepage} onChange={(event) => setDraft({ ...draft, show_on_homepage: event.target.checked })} /><span>Ցուցադրել գլխավոր էջում</span></label>
           </div>
           <div className="admin-language-grid">
             {(['hy', 'en'] as const).map((locale) => <section className="admin-language-card" key={locale}>
@@ -239,8 +217,8 @@ export function AdminProductsPage() {
               </div>
             </article>)}</div> : <div className="admin-filter-empty"><SlidersHorizontal /><span>Այս ապրանքի համար տեխնիկական ֆիլտր դեռ ավելացված չէ։</span></div>}
           </section>
-          <AssetPicker label="Ապրանքի նկարներ" icon={Image} assets={draft.images ?? []} media={media} kind="image" maxItems={4} onAdd={(asset) => setDraft((current) => ({ ...current, images: [...(current.images ?? []), asset].slice(0, 4) }))} onMove={moveImage} onRemove={(index) => setDraft((current) => ({ ...current, images: (current.images ?? []).filter((_, itemIndex) => itemIndex !== index) }))} />
-          <AssetPicker label="PDF փաստաթղթեր" icon={FileText} assets={draft.documents ?? []} media={media} kind="document" onAdd={(asset) => setDraft({ ...draft, documents: [...(draft.documents ?? []), asset] })} onRemove={(index) => setDraft({ ...draft, documents: (draft.documents ?? []).filter((_, itemIndex) => itemIndex !== index) })} />
+          <AssetPicker label="Ապրանքի նկարներ" assets={draft.images ?? []} media={media} kind="image" maxItems={4} onAdd={(asset) => setDraft((current) => ({ ...current, images: [...(current.images ?? []), asset].slice(0, 4) }))} onMove={moveImage} onRemove={(index) => setDraft((current) => ({ ...current, images: (current.images ?? []).filter((_, itemIndex) => itemIndex !== index) }))} />
+          <AssetPicker label="PDF փաստաթղթեր" assets={draft.documents ?? []} media={media} kind="document" onAdd={(asset) => setDraft({ ...draft, documents: [...(draft.documents ?? []), asset] })} onRemove={(index) => setDraft({ ...draft, documents: (draft.documents ?? []).filter((_, itemIndex) => itemIndex !== index) })} />
         </form>
       </div>}
     </>
