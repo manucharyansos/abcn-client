@@ -234,7 +234,7 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
               const Icon = directionIcons[index % directionIcons.length]
               const translation = entryTranslation(service)
               return <article className="direction-card" key={service.id}>
-                <div className="direction-card-top"><span>{String(index + 1).padStart(2, '0')}</span><Icon size={26} strokeWidth={1.6} /></div>
+                <div className="direction-card-top"><Icon size={26} strokeWidth={1.6} /></div>
                 <h3>{translation.title}</h3>
                 <p>{translation.summary}</p>
                 <Link to={`/services/${service.slug}`} aria-label={translation.title}><ArrowRight size={19} /></Link>
@@ -242,7 +242,7 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
             }) : copy.directions.items.map((item, index) => {
               const Icon = directionIcons[index % directionIcons.length]
               return <article className="direction-card" key={item.index}>
-                <div className="direction-card-top"><span>{item.index}</span><Icon size={26} strokeWidth={1.6} /></div>
+                <div className="direction-card-top"><Icon size={26} strokeWidth={1.6} /></div>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
                 <Link to="/services" aria-label={item.title}><ArrowRight size={19} /></Link>
@@ -349,6 +349,16 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
 
 export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
   const managed = useManagedPage('about', locale, copy.about.title, copy.about.lead)
+  const [team, setTeam] = useState<EditorialEntry[]>([])
+
+  useEffect(() => {
+    let active = true
+    api.getPublicTeam()
+      .then((result) => { if (active) setTeam(result) })
+      .catch(() => { if (active) setTeam([]) })
+    return () => { active = false }
+  }, [])
+
   return (
     <>
       <PageHero eyebrow={managed.eyebrow || copy.about.eyebrow} title={managed.title || copy.about.title} lead={managed.lead || copy.about.lead} />
@@ -372,14 +382,15 @@ export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) 
         <div className="container">
           <div className="section-heading"><Eyebrow>{copy.about.teamTitle}</Eyebrow></div>
           <div className="team-grid">
-            {company.team.map((person) => {
-              const armenian = copy.nav.home === 'Գլխավոր'
+            {team.map((person) => {
+              const translation = person.translations[locale] ?? person.translations.en
+              const image = person.images?.[0]
               return (
-                <article className="team-card" key={person.email}>
-                  <div className="team-monogram">{person.nameEn.split(' ').map((word) => word[0]).join('')}</div>
-                  <div><h3>{armenian ? person.nameHy : person.nameEn}</h3><p>{armenian ? person.roleHy : person.roleEn}</p></div>
-                  <a href={`mailto:${person.email}`}>{person.email}</a>
-                  <a href={`tel:${person.phone.replace(/\s/g, '')}`}>{person.phone}</a>
+                <article className="team-card" key={person.id}>
+                  <div className="team-monogram team-photo">
+                    <img src={image?.url || '/images/abcn-logo.png'} alt={image?.alt?.[locale] || translation.title} />
+                  </div>
+                  <div><h3>{translation.title}</h3><p>{translation.summary}</p></div>
                 </article>
               )
             })}
