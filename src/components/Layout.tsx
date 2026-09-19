@@ -84,8 +84,8 @@ export function Layout({ locale, setLocale, copy, companyInfo }: LayoutProps) {
             {navigation.map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}
           </nav>
           <div className="footer-contact">
-            <a href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}>{company.phone}</a>
-            <a href={`mailto:${companyInfo.email}`}>{company.email}</a>
+            <a href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}>{companyInfo.phone}</a>
+            <a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a>
             <span>{companyInfo.address}</span>
           </div>
         </div>
