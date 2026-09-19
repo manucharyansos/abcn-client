@@ -58,10 +58,9 @@ export function ServicesPage({ copy, locale }: { copy: SiteCopy; locale: Locale 
       <div className="container">
         <div className="section-heading"><Eyebrow>{copy.servicesPage.listEyebrow}</Eyebrow><h2>{copy.servicesPage.listTitle}</h2></div>
         {services === null ? <PublicLoading locale={locale} /> : services.length ? <div className="service-directory-grid">
-          {services.map((service, index) => {
+          {services.map((service) => {
             const translation = translationFor(service, locale)
             return <article className="service-directory-card" key={service.id}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
               <BriefcaseBusiness />
               <h2>{translation.title}</h2>
               <p>{translation.summary}</p>
