@@ -3,6 +3,8 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { AdminLayout } from './admin/AdminLayout'
 import { content, type Locale } from './content'
+import { api, type AdminPage } from './api'
+import { applyManagedPages } from './pageContent'
 import {
   AboutPage,
   ContactPage,
@@ -34,6 +36,7 @@ function ScrollToTop() {
 }
 
 function App() {
+  const [managedPages, setManagedPages] = useState<AdminPage[]>([])
   const [locale, setLocaleState] = useState<Locale>(() => {
     const saved = window.localStorage.getItem('abcn-locale')
     return saved === 'en' ? 'en' : 'hy'
@@ -49,14 +52,22 @@ function App() {
     document.documentElement.lang = locale
   }, [locale])
 
-  const copy = content[locale]
+  useEffect(() => {
+    let active = true
+    api.getPublicSiteContent()
+      .then((pages) => { if (active) setManagedPages(pages) })
+      .catch(() => { if (active) setManagedPages([]) })
+    return () => { active = false }
+  }, [])
+
+  const { copy, companyInfo } = applyManagedPages(content[locale], managedPages, locale)
 
   return (
     <>
       <ScrollToTop />
       <Routes>
         <Route
-          element={<Layout locale={locale} setLocale={setLocale} copy={copy} />}
+          element={<Layout locale={locale} setLocale={setLocale} copy={copy} companyInfo={companyInfo} />}
         >
           <Route index element={<HomePage copy={copy} locale={locale} />} />
           <Route path="about" element={<AboutPage copy={copy} locale={locale} />} />
@@ -70,7 +81,7 @@ function App() {
           <Route path="products" element={<ProductsPage copy={copy} locale={locale} />} />
           <Route path="products/:slug" element={<ProductDetailPage copy={copy} locale={locale} />} />
           <Route path="compare" element={<ComparePage copy={copy} locale={locale} />} />
-          <Route path="contact" element={<ContactPage copy={copy} locale={locale} />} />
+          <Route path="contact" element={<ContactPage copy={copy} locale={locale} companyInfo={companyInfo} />} />
         </Route>
         <Route path="admin/login" element={<AdminLoginPage />} />
         <Route path="admin" element={<AdminLayout />}>
