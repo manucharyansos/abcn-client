@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: https://api.abcn.am/api/v1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
