@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { company, type Locale, type SiteCopy } from '../content'
+import { type Locale, type SiteCopy } from '../content'
+import type { ManagedCompanyInfo } from '../pageContent'
 
 type LayoutProps = {
   locale: Locale
   setLocale: (locale: Locale) => void
   copy: SiteCopy
+  companyInfo: ManagedCompanyInfo
 }
 
-export function Layout({ locale, setLocale, copy }: LayoutProps) {
+export function Layout({ locale, setLocale, copy, companyInfo }: LayoutProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
 
@@ -82,13 +84,13 @@ export function Layout({ locale, setLocale, copy }: LayoutProps) {
             {navigation.map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}
           </nav>
           <div className="footer-contact">
-            <a href={`tel:${company.phone.replace(/\s/g, '')}`}>{company.phone}</a>
-            <a href={`mailto:${company.email}`}>{company.email}</a>
-            <span>{locale === 'hy' ? company.addressHy : company.addressEn}</span>
+            <a href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}>{company.phone}</a>
+            <a href={`mailto:${companyInfo.email}`}>{company.email}</a>
+            <span>{companyInfo.address}</span>
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} {company.legalName}. {copy.footer.rights}</span>
+          <span>© {new Date().getFullYear()} {companyInfo.legalName}. {copy.footer.rights}</span>
           <Link to="/admin/login">Admin</Link>
         </div>
       </footer>
