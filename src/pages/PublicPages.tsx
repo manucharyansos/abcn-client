@@ -6,7 +6,8 @@ import {
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api, type CatalogFacet, type EditorialEntry, type HomepageContent, type Product, type ProductCategory } from '../api'
 import { ClosingCta, Eyebrow, PageHero } from '../components/PublicUi'
-import { company, type Locale, type SiteCopy } from '../content'
+import { type Locale, type SiteCopy } from '../content'
+import type { ManagedCompanyInfo } from '../pageContent'
 import { setDocumentMeta, useManagedPage } from '../hooks/useManagedPage'
 import { useProductComparison } from '../productComparison'
 
@@ -681,7 +682,7 @@ export function ProductDetailPage({ copy, locale }: { copy: SiteCopy; locale: Lo
   </>
 }
 
-export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
+export function ContactPage({ copy, locale, companyInfo }: { copy: SiteCopy; locale: Locale; companyInfo: ManagedCompanyInfo }) {
   const managed = useManagedPage('contact', locale, copy.contact.title, copy.contact.lead)
   const [searchParams] = useSearchParams()
   const productSlug = searchParams.get('product')?.trim() ?? ''
@@ -767,15 +768,15 @@ export function ContactPage({ copy, locale }: { copy: SiteCopy; locale: Locale }
 
           <aside className="contact-aside">
             <h2>{copy.contact.details}</h2>
-            <div className="contact-line"><Phone /><a href={`tel:${company.phone.replace(/\s/g, '')}`}>{company.phone}</a></div>
-            <div className="contact-line"><Mail /><a href={`mailto:${company.email}`}>{company.email}</a></div>
-            <div className="contact-line"><MapPin /><span>{locale === 'hy' ? company.addressHy : company.addressEn}</span></div>
+            <div className="contact-line"><Phone /><a href={`tel:${companyInfo.phone.replace(/\s/g, '')}`}>{companyInfo.phone}</a></div>
+            <div className="contact-line"><Mail /><a href={`mailto:${companyInfo.email}`}>{companyInfo.email}</a></div>
+            <div className="contact-line"><MapPin /><span>{companyInfo.address}</span></div>
             <div className="contact-separator" />
             <h3>{copy.contact.leadership}</h3>
-            {company.team.map((person) => (
+            {companyInfo.directContacts.map((person) => (
               <div className="direct-contact" key={person.email}>
-                <strong>{locale === 'hy' ? person.nameHy : person.nameEn}</strong>
-                <span>{locale === 'hy' ? person.roleHy : person.roleEn}</span>
+                <strong>{person.name}</strong>
+                <span>{person.role}</span>
                 <a href={`tel:${person.phone.replace(/\s/g, '')}`}>{person.phone}</a>
               </div>
             ))}
