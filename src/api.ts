@@ -42,7 +42,7 @@ function catalogPath(params: PublicProductParams) {
 }
 
 export type Status = 'draft' | 'published' | 'archived'
-export type PageLocaleContent = { eyebrow: string; title: string; lead: string; body: string }
+export type PageLocaleContent = { eyebrow?: string; title?: string; lead?: string; body?: string; [key: string]: unknown }
 export type PageMeta = { title: string; description: string }
 
 export type AdminPage = {
@@ -181,6 +181,7 @@ export const api = {
     }),
 
   getPublicPage: (slug: string) => request<AdminPage>(`/pages/${slug}`),
+  getPublicSiteContent: () => request<AdminPage[]>('/site-content'),
   getHomepageContent: () => request<HomepageContent>('/homepage'),
   getPublicServices: () => request<EditorialEntry[]>('/services'),
   getPublicService: (slug: string) => request<EditorialEntry>(`/services/${slug}`),
