@@ -1,5 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
-import { BriefcaseBusiness, FolderKanban, Newspaper, Plus, Save, Trash2 } from 'lucide-react'
+import { BriefcaseBusiness, FolderKanban, Newspaper, Plus, Save, Trash2, Users } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 import { AssetPicker } from '../../admin/AssetPicker'
 import type { AdminContext } from '../../admin/AdminLayout'
@@ -33,6 +33,14 @@ const configs = {
     empty: 'Նորություններ դեռ չկան',
     icon: Newspaper,
     dateField: 'published_at',
+  },
+  team: {
+    eyebrow: 'ԹԻՄ',
+    title: 'Թիմ',
+    singular: 'թիմի անդամին',
+    empty: 'Թիմի անդամներ դեռ չկան',
+    icon: Users,
+    dateField: null,
   },
 } as const
 
@@ -199,23 +207,23 @@ export function AdminEntriesPage({ kind }: { kind: EditorialKind }) {
             <label><span>Վիճակ</span><select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value as Status })}><option value="draft">Սևագիր</option><option value="published">Հրապարակված</option><option value="archived">Արխիվ</option></select></label>
             <label><span>Հերթականություն</span><input type="number" min="0" value={draft.sort_order} onChange={(event) => setDraft({ ...draft, sort_order: Number(event.target.value) })} /></label>
             {dateInput}
-            <label className="admin-checkbox"><input type="checkbox" checked={draft.show_on_homepage} onChange={(event) => setDraft({ ...draft, show_on_homepage: event.target.checked })} /><span>Ցուցադրել գլխավոր էջում</span></label>
+            {kind !== 'team' && <label className="admin-checkbox"><input type="checkbox" checked={draft.show_on_homepage} onChange={(event) => setDraft({ ...draft, show_on_homepage: event.target.checked })} /><span>Ցուցադրել գլխավոր էջում</span></label>}
           </div>
           <div className="admin-language-grid">
             {(['hy', 'en'] as const).map((locale) => <section className="admin-language-card" key={locale}>
               <div className="admin-language-title"><span>{locale.toUpperCase()}</span><h2>{locale === 'hy' ? 'Հայերեն' : 'English'}</h2></div>
-              <label><span>Վերնագիր</span><input value={draft.translations[locale].title} onChange={(event) => updateTranslation(locale, 'title', event.target.value)} required /></label>
-              <label><span>Կարճ նկարագրություն</span><textarea rows={4} value={draft.translations[locale].summary ?? ''} onChange={(event) => updateTranslation(locale, 'summary', event.target.value)} /></label>
-              <label><span>Ամբողջական տեքստ</span><textarea rows={10} value={draft.translations[locale].body ?? ''} onChange={(event) => updateTranslation(locale, 'body', event.target.value)} /></label>
+              <label><span>{kind === 'team' ? 'Անուն, ազգանուն' : 'Վերնագիր'}</span><input value={draft.translations[locale].title} onChange={(event) => updateTranslation(locale, 'title', event.target.value)} required /></label>
+              <label><span>{kind === 'team' ? 'Պաշտոն / մասնագիտացում' : 'Կարճ նկարագրություն'}</span><textarea rows={4} value={draft.translations[locale].summary ?? ''} onChange={(event) => updateTranslation(locale, 'summary', event.target.value)} /></label>
+              {kind !== 'team' && <label><span>Ամբողջական տեքստ</span><textarea rows={10} value={draft.translations[locale].body ?? ''} onChange={(event) => updateTranslation(locale, 'body', event.target.value)} /></label>}
             </section>)}
           </div>
           <AssetPicker
-            label="Նկարներ"
+            label={kind === 'team' ? "Անդամի նկար" : "Նկարներ"}
             assets={draft.images ?? []}
             media={media}
             kind="image"
-            maxItems={4}
-            onAdd={(asset) => setDraft((current) => ({ ...current, images: [...(current.images ?? []), asset].slice(0, 4) }))}
+            maxItems={kind === 'team' ? 1 : 4}
+            onAdd={(asset) => setDraft((current) => ({ ...current, images: [...(current.images ?? []), asset].slice(0, kind === 'team' ? 1 : 4) }))}
             onMove={moveImage}
             onRemove={(index) => setDraft((current) => ({ ...current, images: (current.images ?? []).filter((_, itemIndex) => itemIndex !== index) }))}
           />

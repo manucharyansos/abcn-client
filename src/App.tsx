@@ -82,6 +82,7 @@ function App() {
           <Route path="projects" element={<AdminEntriesPage kind="projects" />} />
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="news" element={<AdminEntriesPage kind="news" />} />
+          <Route path="team" element={<AdminEntriesPage kind="team" />} />
           <Route path="media" element={<AdminMediaPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
