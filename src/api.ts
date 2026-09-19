@@ -94,7 +94,7 @@ export type Product = {
   updated_at: string
 }
 
-export type EditorialKind = 'services' | 'projects' | 'news'
+export type EditorialKind = 'services' | 'projects' | 'news' | 'team'
 export type EditorialTranslation = { title: string; summary?: string; body?: string }
 export type EditorialEntry = {
   id: number
@@ -188,6 +188,7 @@ export const api = {
   getPublicProject: (slug: string) => request<EditorialEntry>(`/projects/${slug}`),
   getPublicNews: () => request<EditorialEntry[]>('/news'),
   getPublicNewsArticle: (slug: string) => request<EditorialEntry>(`/news/${slug}`),
+  getPublicTeam: () => request<EditorialEntry[]>('/team'),
   getPublicCategories: () => request<ProductCategory[]>('/product-categories'),
   getPublicProducts: (params: PublicProductParams = {}) => request<CatalogPage>(catalogPath(params)),
   getPublicProduct: (slug: string) => request<Product>(`/products/${slug}`),
