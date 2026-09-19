@@ -86,7 +86,7 @@ const labels: Record<string, string> = {
   skip: 'Անցնել բովանդակությանը',
 }
 
-function labelFor(key: string, index?: number) {
+function labelFor(key: string) {
   if (/^\d+$/.test(key)) return `Տարր ${Number(key) + 1}`
   return labels[key] ?? key.replace(/([a-z])([A-Z])/g, '$1 $2')
 }
