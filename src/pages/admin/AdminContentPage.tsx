@@ -4,21 +4,106 @@ import { useOutletContext } from 'react-router-dom'
 import type { AdminContext } from '../../admin/AdminLayout'
 import { AdminError, AdminLoading, AdminPageHeading, AdminSuccess } from '../../admin/shared'
 import { api, type AdminPage, type PageLocaleContent, type PageMeta } from '../../api'
+import { managedPageNames, normalizeManagedPageContent } from '../../pageContent'
 
-const pageNames: Record<string, string> = {
-  home: 'Գլխավոր էջ', about: 'Մեր մասին', solutions: 'Լուծումներ', services: 'Ծառայություններ',
-  projects: 'Նախագծեր', products: 'Ապրանքներ', news: 'Նորություններ', contact: 'Կապ',
+const emptyMeta: PageMeta = { title: '', description: '' }
+
+const labels: Record<string, string> = {
+  nav: 'Մենյու',
+  hero: 'Գլխավոր բլոկ',
+  intro: 'Ներածական բլոկ',
+  directions: 'Ուղղություններ',
+  process: 'Աշխատանքի ընթացք',
+  productsTeaser: 'Կատալոգի բլոկ',
+  homeContent: 'Գլխավոր էջի բաժիններ',
+  about: 'Մեր մասին',
+  solutionsPage: 'Լուծումներ',
+  servicesPage: 'Ծառայություններ',
+  projectsPage: 'Նախագծեր',
+  productsPage: 'Ապրանքներ',
+  newsPage: 'Նորություններ',
+  contact: 'Կապի էջ',
+  cta: 'Վերջնական կոչ',
+  footer: 'Footer',
+  company: 'Ընկերության տվյալներ',
+  directContacts: 'Ուղիղ կոնտակտներ',
+  items: 'Տարրեր',
+  principles: 'Սկզբունքներ',
+  features: 'Առավելություններ',
+  eyebrow: 'Փոքր վերնագիր',
+  title: 'Վերնագիր',
+  lead: 'Ներածական տեքստ',
+  body: 'Տեքստ',
+  storyTitle: 'Պատմության վերնագիր',
+  story: 'Պատմության տեքստ',
+  principlesTitle: 'Սկզբունքների վերնագիր',
+  teamTitle: 'Թիմի վերնագիր',
+  listEyebrow: 'Ցանկի փոքր վերնագիր',
+  listTitle: 'Ցանկի վերնագիր',
+  productsEyebrow: 'Ապրանքների փոքր վերնագիր',
+  productsTitle: 'Ապրանքների վերնագիր',
+  productsAction: 'Ապրանքների կոճակ',
+  empty: 'Դատարկ վիճակի տեքստ',
+  view: 'Դիտելու կոճակ',
+  status: 'Կատալոգի կարգավիճակի տեքստ',
+  action: 'Կոճակի տեքստ',
+  noteTitle: 'Նշման վերնագիր',
+  note: 'Նշման տեքստ',
+  primary: 'Գլխավոր կոճակ',
+  secondary: 'Երկրորդ կոճակ',
+  link: 'Հղման տեքստ',
+  servicesEyebrow: 'Ծառայությունների փոքր վերնագիր',
+  servicesTitle: 'Ծառայությունների վերնագիր',
+  servicesAction: 'Ծառայությունների հղում',
+  projectsEyebrow: 'Նախագծերի փոքր վերնագիր',
+  projectsTitle: 'Նախագծերի վերնագիր',
+  projectsAction: 'Նախագծերի հղում',
+  newsEyebrow: 'Նորությունների փոքր վերնագիր',
+  newsTitle: 'Նորությունների վերնագիր',
+  newsAction: 'Նորությունների հղում',
+  readMore: 'Կարդալ ավելին',
+  formTitle: 'Ձևի վերնագիր',
+  name: 'Անվան դաշտ',
+  email: 'Էլ․ փոստ',
+  phone: 'Հեռախոս',
+  address: 'Հասցե',
+  company: 'Ընկերություն',
+  message: 'Հաղորդագրության դաշտ',
+  submit: 'Ուղարկել կոճակ',
+  sending: 'Ուղարկման տեքստ',
+  success: 'Հաջողության հաղորդագրություն',
+  error: 'Սխալի հաղորդագրություն',
+  details: 'Կոնտակտների վերնագիր',
+  leadership: 'Ուղիղ կապերի վերնագիր',
+  legalName: 'Իրավաբանական անվանում',
+  role: 'Պաշտոն',
+  line: 'Footer-ի տեքստ',
+  rights: 'Իրավունքների տեքստ',
+  home: 'Գլխավոր',
+  about: 'Մեր մասին',
+  services: 'Ծառայություններ',
+  projects: 'Նախագծեր',
+  news: 'Նորություններ',
+  products: 'Ապրանքներ',
+  contact: 'Կապ',
+  project: 'Header կոճակ',
+  menu: 'Բացել մենյուն',
+  close: 'Փակել մենյուն',
+  label: 'Մենյուի անվանում',
+  skip: 'Անցնել բովանդակությանը',
 }
 
-const emptyContent: PageLocaleContent = { eyebrow: '', title: '', lead: '', body: '' }
-const emptyMeta: PageMeta = { title: '', description: '' }
+function labelFor(key: string, index?: number) {
+  if (/^\d+$/.test(key)) return `Տարր ${Number(key) + 1}`
+  return labels[key] ?? key.replace(/([a-z])([A-Z])/g, '$1 $2')
+}
 
 function normalizePage(page: AdminPage): AdminPage {
   return {
     ...page,
     content: {
-      hy: { ...emptyContent, ...page.content.hy },
-      en: { ...emptyContent, ...page.content.en },
+      hy: normalizeManagedPageContent(page.slug, 'hy', page.content.hy) as PageLocaleContent,
+      en: normalizeManagedPageContent(page.slug, 'en', page.content.en) as PageLocaleContent,
     },
     meta: {
       hy: { ...emptyMeta, ...page.meta?.hy },
@@ -27,22 +112,89 @@ function normalizePage(page: AdminPage): AdminPage {
   }
 }
 
+function setAtPath(root: PageLocaleContent, path: (string | number)[], value: string): PageLocaleContent {
+  const next = JSON.parse(JSON.stringify(root)) as Record<string, unknown>
+  let cursor: unknown = next
+
+  path.forEach((part, index) => {
+    const isLast = index === path.length - 1
+    if (Array.isArray(cursor)) {
+      const numericPart = Number(part)
+      if (isLast) cursor[numericPart] = value
+      else cursor = cursor[numericPart]
+      return
+    }
+
+    if (cursor && typeof cursor === 'object') {
+      const record = cursor as Record<string, unknown>
+      const key = String(part)
+      if (isLast) record[key] = value
+      else cursor = record[key]
+    }
+  })
+
+  return next as PageLocaleContent
+}
+
+function shouldUseTextarea(key: string, value: string) {
+  return value.length > 90 || /(body|lead|text|description|story|note|summary|error|success)/i.test(key)
+}
+
+function ContentTree({ value, path = [], onChange }: {
+  value: unknown
+  path?: (string | number)[]
+  onChange: (path: (string | number)[], value: string) => void
+}) {
+  const currentKey = String(path[path.length - 1] ?? '')
+
+  if (typeof value === 'string') {
+    const label = labelFor(currentKey)
+    return <label className="admin-content-field">
+      <span>{label}</span>
+      {shouldUseTextarea(currentKey, value)
+        ? <textarea rows={4} value={value} onChange={(event) => onChange(path, event.target.value)} />
+        : <input value={value} onChange={(event) => onChange(path, event.target.value)} />}
+    </label>
+  }
+
+  if (Array.isArray(value)) {
+    return <div className="admin-content-group admin-content-array">
+      {path.length ? <h3>{labelFor(currentKey)}</h3> : null}
+      {value.map((item, index) => <div className="admin-content-array-item" key={index}>
+        <strong>{`Տարր ${index + 1}`}</strong>
+        <ContentTree value={item} path={[...path, index]} onChange={onChange} />
+      </div>)}
+    </div>
+  }
+
+  if (value && typeof value === 'object') {
+    return <div className="admin-content-group">
+      {path.length ? <h3>{labelFor(currentKey)}</h3> : null}
+      <div className="admin-content-fields">
+        {Object.entries(value as Record<string, unknown>).map(([key, child]) => (
+          <ContentTree key={key} value={child} path={[...path, key]} onChange={onChange} />
+        ))}
+      </div>
+    </div>
+  }
+
+  return null
+}
+
 function LocaleEditor({ locale, label, page, onChange, onMeta }: {
   locale: 'hy' | 'en'
   label: string
   page: AdminPage
-  onChange: (key: keyof PageLocaleContent, value: string) => void
+  onChange: (path: (string | number)[], value: string) => void
   onMeta: (key: keyof PageMeta, value: string) => void
 }) {
-  const content = page.content[locale] as PageLocaleContent
+  const pageContent = page.content[locale] as PageLocaleContent
   const meta = page.meta?.[locale] as PageMeta
+
   return (
     <section className="admin-language-card">
       <div className="admin-language-title"><span>{locale.toUpperCase()}</span><h2>{label}</h2></div>
-      <label><span>Փոքր վերնագիր</span><input value={content.eyebrow} onChange={(event) => onChange('eyebrow', event.target.value)} /></label>
-      <label><span>Գլխավոր վերնագիր</span><textarea rows={2} value={content.title} onChange={(event) => onChange('title', event.target.value)} required /></label>
-      <label><span>Ներածական տեքստ</span><textarea rows={4} value={content.lead} onChange={(event) => onChange('lead', event.target.value)} required /></label>
-      <label><span>Լրացուցիչ տեքստ</span><textarea rows={5} value={content.body} onChange={(event) => onChange('body', event.target.value)} /></label>
+      <ContentTree value={pageContent} onChange={onChange} />
       <div className="admin-separator" />
       <h3>SEO</h3>
       <label><span>Browser title</span><input value={meta.title} onChange={(event) => onMeta('title', event.target.value)} /></label>
@@ -76,10 +228,13 @@ export function AdminContentPage() {
   // oxlint-disable-next-line react/set-state-in-effect
   useEffect(() => { void load() }, [load])
 
-  function updateContent(locale: 'hy' | 'en', key: keyof PageLocaleContent, value: string) {
+  function updateContent(locale: 'hy' | 'en', path: (string | number)[], value: string) {
     setSelected((current) => current ? {
       ...current,
-      content: { ...current.content, [locale]: { ...current.content[locale], [key]: value } },
+      content: {
+        ...current.content,
+        [locale]: setAtPath(current.content[locale], path, value),
+      },
     } : current)
   }
 
@@ -99,7 +254,7 @@ export function AdminContentPage() {
       const updated = normalizePage(await api.updatePage(token, selected))
       setPages((current) => current.map((page) => page.id === updated.id ? updated : page))
       setSelected(updated)
-      setSuccess('Էջի փոփոխությունները պահպանվել են։')
+      setSuccess('Էջի ամբողջ բովանդակությունը պահպանվել է։')
       setError('')
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Փոփոխությունները չպահպանվեցին։')
@@ -110,23 +265,23 @@ export function AdminContentPage() {
 
   return (
     <>
-      <AdminPageHeading eyebrow="ԿԱՅՔԻ ԷՋԵՐ" title="Բովանդակություն" />
+      <AdminPageHeading eyebrow="ԿԱՅՔԻ ԷՋԵՐ" title="Ամբողջ բովանդակություն" />
       <AdminError message={error} /><AdminSuccess message={success} />
       {loading && <AdminLoading />}
       {!loading && pages.length === 0 && <div className="admin-empty admin-panel"><FileStack /><h3>Էջեր չկան</h3><p>API-ում գործարկեք database seeder-ը։</p></div>}
       {selected && <form className="admin-editor-layout" onSubmit={save}>
         <aside className="admin-record-list">
-          {pages.map((page) => <button type="button" key={page.id} className={selected.id === page.id ? 'active' : ''} onClick={() => { setSelected(normalizePage(page)); setSuccess('') }}><span>{pageNames[page.slug] ?? page.slug}</span><small>{page.status}</small></button>)}
+          {pages.map((page) => <button type="button" key={page.id} className={selected.id === page.id ? 'active' : ''} onClick={() => { setSelected(normalizePage(page)); setSuccess('') }}><span>{managedPageNames[page.slug] ?? page.slug}</span><small>{page.status}</small></button>)}
         </aside>
         <div className="admin-editor-main">
           <div className="admin-editor-toolbar">
-            <div><strong>{pageNames[selected.slug] ?? selected.slug}</strong><span>/{selected.slug}</span></div>
+            <div><strong>{managedPageNames[selected.slug] ?? selected.slug}</strong><span>/{selected.slug}</span></div>
             <label><span>Վիճակ</span><select value={selected.status} onChange={(event) => setSelected({ ...selected, status: event.target.value as AdminPage['status'] })}><option value="draft">Սևագիր</option><option value="published">Հրապարակված</option><option value="archived">Արխիվ</option></select></label>
             <button className="admin-primary-button" disabled={saving}><Save />{saving ? 'Պահպանվում է…' : 'Պահպանել'}</button>
           </div>
           <div className="admin-language-grid">
-            <LocaleEditor locale="hy" label="Հայերեն" page={selected} onChange={(key, value) => updateContent('hy', key, value)} onMeta={(key, value) => updateMeta('hy', key, value)} />
-            <LocaleEditor locale="en" label="English" page={selected} onChange={(key, value) => updateContent('en', key, value)} onMeta={(key, value) => updateMeta('en', key, value)} />
+            <LocaleEditor locale="hy" label="Հայերեն" page={selected} onChange={(path, value) => updateContent('hy', path, value)} onMeta={(key, value) => updateMeta('hy', key, value)} />
+            <LocaleEditor locale="en" label="English" page={selected} onChange={(path, value) => updateContent('en', path, value)} onMeta={(key, value) => updateMeta('en', key, value)} />
           </div>
         </div>
       </form>}
