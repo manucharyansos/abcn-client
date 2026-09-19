@@ -297,9 +297,7 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
           </div>
           <div className="process-list">
             {copy.process.items.map(([number, title, text]) => (
-              <article key={number}>
-                <span>{number}</span><div><h3>{title}</h3><p>{text}</p></div>
-              </article>
+              <article key={number}><div><h3>{title}</h3><p>{text}</p></div></article>
             ))}
           </div>
         </div>
@@ -365,7 +363,6 @@ export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) 
       <PageHero eyebrow={managed.eyebrow || copy.about.eyebrow} title={managed.title || copy.about.title} lead={managed.lead || copy.about.lead} />
       <section className="section">
         <div className="container editorial-grid">
-          <div className="editorial-index">01</div>
           <div><h2>{copy.about.storyTitle}</h2><p className="large-copy">{managed.body || copy.about.story}</p></div>
         </div>
       </section>
@@ -373,8 +370,8 @@ export function AboutPage({ copy, locale }: { copy: SiteCopy; locale: Locale }) 
         <div className="container">
           <div className="section-heading"><Eyebrow>{copy.about.principlesTitle}</Eyebrow></div>
           <div className="principle-grid">
-            {copy.about.principles.map(([title, text], index) => (
-              <article key={title}><span>0{index + 1}</span><h3>{title}</h3><p>{text}</p></article>
+            {copy.about.principles.map(([title, text]) => (
+              <article key={title}><h3>{title}</h3><p>{text}</p></article>
             ))}
           </div>
         </div>
@@ -415,7 +412,7 @@ export function SolutionsPage({ copy, locale }: { copy: SiteCopy; locale: Locale
             return (
               <article key={item.index}>
                 <div className="solution-icon"><Icon /></div>
-                <span>{item.index}</span><h2>{item.title}</h2><p>{item.text}</p>
+                <h2>{item.title}</h2><p>{item.text}</p>
                 <Link to="/contact"><ArrowRight /></Link>
               </article>
             )
