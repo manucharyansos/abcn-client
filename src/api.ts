@@ -82,6 +82,7 @@ export type Product = {
   sku: string | null
   status: Status
   featured: boolean
+  show_on_homepage: boolean
   sort_order: number
   translations: { hy: ProductTranslation; en: ProductTranslation }
   specifications: { hy?: Record<string, string>; en?: Record<string, string> } | null
@@ -91,6 +92,28 @@ export type Product = {
   category?: ProductCategory | null
   related_products?: Product[]
   updated_at: string
+}
+
+export type EditorialKind = 'services' | 'projects' | 'news'
+export type EditorialTranslation = { title: string; summary?: string; body?: string }
+export type EditorialEntry = {
+  id: number
+  slug: string
+  status: Status
+  show_on_homepage: boolean
+  sort_order: number
+  translations: { hy: EditorialTranslation; en: EditorialTranslation }
+  images: ProductAsset[] | null
+  completed_at?: string | null
+  published_at?: string | null
+  updated_at: string
+}
+
+export type HomepageContent = {
+  services: EditorialEntry[]
+  projects: EditorialEntry[]
+  products: Product[]
+  news: EditorialEntry[]
 }
 
 export type MediaAsset = {
@@ -158,6 +181,13 @@ export const api = {
     }),
 
   getPublicPage: (slug: string) => request<AdminPage>(`/pages/${slug}`),
+  getHomepageContent: () => request<HomepageContent>('/homepage'),
+  getPublicServices: () => request<EditorialEntry[]>('/services'),
+  getPublicService: (slug: string) => request<EditorialEntry>(`/services/${slug}`),
+  getPublicProjects: () => request<EditorialEntry[]>('/projects'),
+  getPublicProject: (slug: string) => request<EditorialEntry>(`/projects/${slug}`),
+  getPublicNews: () => request<EditorialEntry[]>('/news'),
+  getPublicNewsArticle: (slug: string) => request<EditorialEntry>(`/news/${slug}`),
   getPublicCategories: () => request<ProductCategory[]>('/product-categories'),
   getPublicProducts: (params: PublicProductParams = {}) => request<CatalogPage>(catalogPath(params)),
   getPublicProduct: (slug: string) => request<Product>(`/products/${slug}`),
@@ -174,7 +204,16 @@ export const api = {
   logout: (token: string) => request<{ message: string }>('/admin/logout', { method: 'POST', token }),
   getDashboard: (token: string) =>
     request<{
-      counts: { new_requests: number; total_requests: number; pages: number; products: number; media: number }
+      counts: {
+        new_requests: number
+        total_requests: number
+        pages: number
+        products: number
+        services: number
+        projects: number
+        news: number
+        media: number
+      }
       requests: ContactRequestRecord[]
     }>('/admin/dashboard', { token }),
 
@@ -206,6 +245,15 @@ export const api = {
       method: product.id ? 'PUT' : 'POST', token, body: JSON.stringify(product),
     }),
   deleteProduct: (token: string, id: number) => request<void>(`/admin/products/${id}`, { method: 'DELETE', token }),
+
+  getEditorialEntries: (token: string, kind: EditorialKind) =>
+    request<EditorialEntry[]>(`/admin/${kind}`, { token }),
+  saveEditorialEntry: (token: string, kind: EditorialKind, entry: Omit<EditorialEntry, 'id' | 'updated_at'> & { id?: number }) =>
+    request<EditorialEntry>(entry.id ? `/admin/${kind}/${entry.id}` : `/admin/${kind}`, {
+      method: entry.id ? 'PUT' : 'POST', token, body: JSON.stringify(entry),
+    }),
+  deleteEditorialEntry: (token: string, kind: EditorialKind, id: number) =>
+    request<void>(`/admin/${kind}/${id}`, { method: 'DELETE', token }),
 
   getMedia: (token: string, page = 1) => request<Paginated<MediaAsset>>(`/admin/media?page=${page}`, { token }),
   uploadMedia: (token: string, file: File, alt: { hy: string; en: string }) => {

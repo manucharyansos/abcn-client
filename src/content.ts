@@ -29,7 +29,7 @@ export const company = {
 export const content = {
   en: {
     nav: {
-      home: 'Home', about: 'About', solutions: 'Solutions', products: 'Products',
+      home: 'Home', about: 'About', services: 'Services', projects: 'Projects', news: 'News', products: 'Products',
       contact: 'Contact', project: 'Discuss a project', menu: 'Open menu',
       close: 'Close menu', label: 'Main navigation', skip: 'Skip to content',
     },
@@ -68,6 +68,12 @@ export const content = {
       body: 'Verified products will be added with clear categories, technical specifications and supporting documents. Until then, our team can help identify the right direction for your project.',
       action: 'Explore the catalog',
     },
+    homeContent: {
+      servicesEyebrow: 'OUR SERVICES', servicesTitle: 'Engineering support built around real project needs.', servicesAction: 'All services',
+      projectsEyebrow: 'SELECTED PROJECTS', projectsTitle: 'Experience turned into dependable implementation.', projectsAction: 'All projects',
+      productsEyebrow: 'SELECTED PRODUCTS', productsTitle: 'Technical products chosen for informed decisions.', productsAction: 'Open catalog',
+      newsEyebrow: 'LATEST NEWS', newsTitle: 'Updates from ABCN.', newsAction: 'All news', readMore: 'Read more',
+    },
     cta: {
       eyebrow: 'START A CONVERSATION', title: 'Tell us what your project needs.',
       body: 'Share the application, technical requirement or initial question. Our team will contact you to define the next step.',
@@ -91,6 +97,23 @@ export const content = {
       lead: 'The solution section is designed to connect a real project need with the relevant engineering direction, products and documentation.',
       noteTitle: 'Built for project-specific requirements',
       note: 'Each direction can be developed around the application, operating environment and required result, with compatible equipment and technical documentation selected for the project.',
+    },
+    servicesPage: {
+      eyebrow: 'SERVICES', title: 'Engineering services and relevant products in one place.',
+      lead: 'Explore ABCN services, choose the direction that fits your project and browse our technical product catalog.',
+      listEyebrow: 'ENGINEERING SERVICES', listTitle: 'Support shaped around the requirements of each project.',
+      productsEyebrow: 'PRODUCT CATALOG', productsTitle: 'Products that support the selected solution.', productsAction: 'View the full catalog',
+      empty: 'Service information is being prepared.',
+    },
+    projectsPage: {
+      eyebrow: 'PROJECTS', title: 'Delivered work and practical engineering experience.',
+      lead: 'Our projects show the path from a real requirement to a dependable, implemented solution.',
+      empty: 'Project case studies are being prepared.', view: 'View project',
+    },
+    newsPage: {
+      eyebrow: 'NEWS', title: 'ABCN news and professional updates.',
+      lead: 'Follow company projects, new partnerships, products and industry developments.',
+      empty: 'News will be published here soon.', view: 'Read article',
     },
     productsPage: {
       eyebrow: 'PRODUCTS', title: 'A technical catalog designed for informed selection.',
@@ -117,7 +140,7 @@ export const content = {
   },
   hy: {
     nav: {
-      home: 'Գլխավոր', about: 'Մեր մասին', solutions: 'Լուծումներ', products: 'Ապրանքներ',
+      home: 'Գլխավոր', about: 'Մեր մասին', services: 'Ծառայություններ', projects: 'Նախագծեր', news: 'Նորություններ', products: 'Ապրանքներ',
       contact: 'Կապ', project: 'Քննարկել նախագիծը', menu: 'Բացել մենյուն',
       close: 'Փակել մենյուն', label: 'Գլխավոր նավիգացիա', skip: 'Անցնել բովանդակությանը',
     },
@@ -156,6 +179,12 @@ export const content = {
       body: 'Հաստատված ապրանքները կավելացվեն հստակ կատեգորիաներով, տեխնիկական բնութագրերով և համապատասխան փաստաթղթերով։ Մինչ այդ մեր թիմը կօգնի ընտրել ձեր նախագծին համապատասխան ուղղությունը։',
       action: 'Ծանոթանալ կատալոգին',
     },
+    homeContent: {
+      servicesEyebrow: 'ՄԵՐ ԾԱՌԱՅՈՒԹՅՈՒՆՆԵՐԸ', servicesTitle: 'Ինժեներական աջակցություն՝ իրական նախագծային պահանջների շուրջ։', servicesAction: 'Բոլոր ծառայությունները',
+      projectsEyebrow: 'ԸՆՏՐՎԱԾ ՆԱԽԱԳԾԵՐ', projectsTitle: 'Փորձ, որը վերածվել է հուսալի իրականացման։', projectsAction: 'Բոլոր նախագծերը',
+      productsEyebrow: 'ԸՆՏՐՎԱԾ ԱՊՐԱՆՔՆԵՐ', productsTitle: 'Տեխնիկական ապրանքներ՝ հիմնավորված ընտրության համար։', productsAction: 'Բացել կատալոգը',
+      newsEyebrow: 'ՎԵՐՋԻՆ ՆՈՐՈՒԹՅՈՒՆՆԵՐԸ', newsTitle: 'ABCN-ի թարմացումները։', newsAction: 'Բոլոր նորությունները', readMore: 'Կարդալ ավելին',
+    },
     cta: {
       eyebrow: 'ՍԿՍԵՆՔ ՔՆՆԱՐԿՈՒՄԸ', title: 'Պատմեք՝ ինչ է անհրաժեշտ ձեր նախագծին։',
       body: 'Ուղարկեք կիրառության ոլորտը, տեխնիկական պահանջը կամ նախնական հարցը։ Մեր թիմը կկապվի ձեզ հետ՝ հաջորդ քայլը հստակեցնելու համար։',
@@ -179,6 +208,23 @@ export const content = {
       lead: 'Լուծումների բաժինը նախագծված է իրական կարիքը համապատասխան ինժեներական ուղղության, ապրանքների և փաստաթղթերի հետ կապելու համար։',
       noteTitle: 'Նախատեսված է յուրաքանչյուր նախագծի պահանջների համար',
       note: 'Յուրաքանչյուր ուղղություն ձևավորվում է կիրառության, շահագործման միջավայրի և ակնկալվող արդյունքի շուրջ՝ նախագծին համապատասխան սարքավորումներով ու տեխնիկական փաստաթղթերով։',
+    },
+    servicesPage: {
+      eyebrow: 'ԾԱՌԱՅՈՒԹՅՈՒՆՆԵՐ', title: 'Ինժեներական ծառայություններ և համապատասխան ապրանքներ՝ մեկ վայրում։',
+      lead: 'Ծանոթացեք ABCN-ի ծառայություններին, ընտրեք նախագծին համապատասխան ուղղությունը և դիտեք մեր տեխնիկական ապրանքների կատալոգը։',
+      listEyebrow: 'ԻՆԺԵՆԵՐԱԿԱՆ ԾԱՌԱՅՈՒԹՅՈՒՆՆԵՐ', listTitle: 'Աջակցություն՝ ձևավորված յուրաքանչյուր նախագծի պահանջների շուրջ։',
+      productsEyebrow: 'ԱՊՐԱՆՔՆԵՐԻ ԿԱՏԱԼՈԳ', productsTitle: 'Ընտրված լուծումը համալրող ապրանքներ։', productsAction: 'Դիտել ամբողջ կատալոգը',
+      empty: 'Ծառայությունների մասին տեղեկությունը պատրաստվում է։',
+    },
+    projectsPage: {
+      eyebrow: 'ՆԱԽԱԳԾԵՐ', title: 'Իրականացված աշխատանքներ և ինժեներական փորձ։',
+      lead: 'Մեր նախագծերը ներկայացնում են խնդիրից մինչև գործնական և հուսալի լուծում անցած ճանապարհը։',
+      empty: 'Նախագծերի պատմությունները պատրաստվում են։', view: 'Դիտել նախագիծը',
+    },
+    newsPage: {
+      eyebrow: 'ՆՈՐՈՒԹՅՈՒՆՆԵՐ', title: 'ABCN-ի նորությունները և մասնագիտական թարմացումները։',
+      lead: 'Հետևեք ընկերության նախագծերին, նոր գործընկերություններին, ապրանքներին և ոլորտային զարգացումներին։',
+      empty: 'Նորությունները շուտով կհրապարակվեն այստեղ։', view: 'Կարդալ նյութը',
     },
     productsPage: {
       eyebrow: 'ԱՊՐԱՆՔՆԵՐ', title: 'Տեխնիկական կատալոգ՝ հիմնավորված ընտրության համար։',

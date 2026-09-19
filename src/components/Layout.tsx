@@ -14,8 +14,8 @@ export function Layout({ locale, setLocale, copy }: LayoutProps) {
   const location = useLocation()
 
   const navigation = [
-    ['/', copy.nav.home], ['/about', copy.nav.about], ['/solutions', copy.nav.solutions],
-    ['/products', copy.nav.products], ['/contact', copy.nav.contact],
+    ['/', copy.nav.home], ['/about', copy.nav.about], ['/services', copy.nav.services],
+    ['/projects', copy.nav.projects], ['/news', copy.nav.news], ['/contact', copy.nav.contact],
   ] as const
 
   useEffect(() => {

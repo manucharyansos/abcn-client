@@ -1,5 +1,5 @@
 import {
-  FileStack, Images, Inbox, LayoutDashboard, LogOut, PackageSearch, Tags,
+  BriefcaseBusiness, FileStack, FolderKanban, Images, Inbox, LayoutDashboard, LogOut, Newspaper, PackageSearch, Tags,
 } from 'lucide-react'
 import { Link, Navigate, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { api } from '../api'
@@ -12,8 +12,11 @@ const navigation = [
   { to: '/admin', end: true, label: 'Վահանակ', icon: LayoutDashboard },
   { to: '/admin/inquiries', label: 'Հարցումներ', icon: Inbox },
   { to: '/admin/content', label: 'Բովանդակություն', icon: FileStack },
+  { to: '/admin/services', label: 'Ծառայություններ', icon: BriefcaseBusiness },
+  { to: '/admin/projects', label: 'Նախագծեր', icon: FolderKanban },
   { to: '/admin/categories', label: 'Կատեգորիաներ', icon: Tags },
   { to: '/admin/products', label: 'Ապրանքներ', icon: PackageSearch },
+  { to: '/admin/news', label: 'Նորություններ', icon: Newspaper },
   { to: '/admin/media', label: 'Ֆայլեր', icon: Images },
 ]
 

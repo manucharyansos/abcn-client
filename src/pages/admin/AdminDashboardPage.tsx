@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FileStack, Images, Inbox, PackageSearch, RefreshCw } from 'lucide-react'
+import { BriefcaseBusiness, FileStack, FolderKanban, Images, Inbox, Newspaper, PackageSearch, RefreshCw } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { AdminRequestsTable } from '../../admin/AdminRequestsTable'
 import type { AdminContext } from '../../admin/AdminLayout'
@@ -49,7 +49,10 @@ export function AdminDashboardPage() {
         <div className="admin-metrics">
           <Link to="/admin/inquiries"><span>Նոր հարցումներ</span><strong>{data.counts.new_requests}</strong><Inbox /></Link>
           <Link to="/admin/content"><span>Հրապարակված էջեր</span><strong>{data.counts.pages}</strong><FileStack /></Link>
+          <Link to="/admin/services"><span>Հրապարակված ծառայություններ</span><strong>{data.counts.services}</strong><BriefcaseBusiness /></Link>
+          <Link to="/admin/projects"><span>Հրապարակված նախագծեր</span><strong>{data.counts.projects}</strong><FolderKanban /></Link>
           <Link to="/admin/products"><span>Հրապարակված ապրանքներ</span><strong>{data.counts.products}</strong><PackageSearch /></Link>
+          <Link to="/admin/news"><span>Հրապարակված նորություններ</span><strong>{data.counts.news}</strong><Newspaper /></Link>
           <Link to="/admin/media"><span>Ֆայլեր</span><strong>{data.counts.media}</strong><Images /></Link>
         </div>
         <section className="admin-panel">

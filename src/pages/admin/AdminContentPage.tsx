@@ -6,7 +6,8 @@ import { AdminError, AdminLoading, AdminPageHeading, AdminSuccess } from '../../
 import { api, type AdminPage, type PageLocaleContent, type PageMeta } from '../../api'
 
 const pageNames: Record<string, string> = {
-  home: 'Գլխավոր էջ', about: 'Մեր մասին', solutions: 'Լուծումներ', products: 'Ապրանքներ', contact: 'Կապ',
+  home: 'Գլխավոր էջ', about: 'Մեր մասին', solutions: 'Լուծումներ', services: 'Ծառայություններ',
+  projects: 'Նախագծեր', products: 'Ապրանքներ', news: 'Նորություններ', contact: 'Կապ',
 }
 
 const emptyContent: PageLocaleContent = { eyebrow: '', title: '', lead: '', body: '' }
