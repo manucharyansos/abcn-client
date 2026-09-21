@@ -268,10 +268,10 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
             <Link className="text-link" to="/projects">{copy.homeContent.projectsAction}<ArrowRight /></Link>
           </div>
           <div className="home-project-grid">
-            {projects.map((project, index) => {
+            {projects.map((project) => {
               const translation = entryTranslation(project)
               const image = entryImage(project)
-              return <Link className={`home-project-card${index === 0 ? ' featured' : ''}`} to={`/projects/${project.slug}`} key={project.id}>
+              return <Link className="home-project-card" to={`/projects/${project.slug}`} key={project.id}>
                 {image ? <img src={image.url} alt={image.alt?.[locale] || translation.title} /> : <div className="home-card-placeholder"><Network /></div>}
                 <div className="home-project-overlay" />
                 <div className="home-project-copy">
