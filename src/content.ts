@@ -70,7 +70,7 @@ export const content = {
     },
     homeContent: {
       servicesEyebrow: 'OUR SERVICES', servicesTitle: 'Engineering support built around real project needs.', servicesAction: 'All services',
-      projectsEyebrow: 'SELECTED PROJECTS', projectsTitle: 'Experience turned into dependable implementation.', projectsAction: 'All projects',
+      projectsEyebrow: 'SELECTED PROJECTS', projectsTitle: 'Experience, delivered reliably.', projectsAction: 'All projects',
       productsEyebrow: 'SELECTED PRODUCTS', productsTitle: 'Technical products chosen for informed decisions.', productsAction: 'Open catalog',
       newsEyebrow: 'LATEST NEWS', newsTitle: 'Updates from ABCN.', newsAction: 'All news', readMore: 'Read more',
     },
@@ -181,7 +181,7 @@ export const content = {
     },
     homeContent: {
       servicesEyebrow: 'ՄԵՐ ԾԱՌԱՅՈՒԹՅՈՒՆՆԵՐԸ', servicesTitle: 'Ինժեներական աջակցություն՝ իրական նախագծային պահանջների շուրջ։', servicesAction: 'Բոլոր ծառայությունները',
-      projectsEyebrow: 'ԸՆՏՐՎԱԾ ՆԱԽԱԳԾԵՐ', projectsTitle: 'Փորձ, որը վերածվել է հուսալի իրականացման։', projectsAction: 'Բոլոր նախագծերը',
+      projectsEyebrow: 'ԸՆՏՐՎԱԾ ՆԱԽԱԳԾԵՐ', projectsTitle: 'Փորձից՝ հուսալի իրականացում։', projectsAction: 'Բոլոր նախագծերը',
       productsEyebrow: 'ԸՆՏՐՎԱԾ ԱՊՐԱՆՔՆԵՐ', productsTitle: 'Տեխնիկական ապրանքներ՝ հիմնավորված ընտրության համար։', productsAction: 'Բացել կատալոգը',
       newsEyebrow: 'ՎԵՐՋԻՆ ՆՈՐՈՒԹՅՈՒՆՆԵՐԸ', newsTitle: 'ABCN-ի թարմացումները։', newsAction: 'Բոլոր նորությունները', readMore: 'Կարդալ ավելին',
     },
