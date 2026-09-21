@@ -273,7 +273,6 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
               const image = entryImage(project)
               return <Link className="home-project-card" to={`/projects/${project.slug}`} key={project.id}>
                 {image ? <img src={image.url} alt={image.alt?.[locale] || translation.title} /> : <div className="home-card-placeholder"><Network /></div>}
-                <div className="home-project-overlay" />
                 <div className="home-project-copy">
                   {project.completed_at ? <span>{formatEntryDate(project.completed_at)}</span> : null}
                   <h3>{translation.title}</h3>
