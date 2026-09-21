@@ -230,15 +230,22 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
             <Eyebrow>{services.length ? copy.homeContent.servicesEyebrow : copy.directions.eyebrow}</Eyebrow>
             <h2>{services.length ? copy.homeContent.servicesTitle : copy.directions.title}</h2>
           </div>
-          <div className="direction-grid">
+          <div className={`direction-grid${services.length ? ' direction-grid-services' : ''}`}>
             {services.length ? services.map((service, index) => {
               const Icon = directionIcons[index % directionIcons.length]
               const translation = entryTranslation(service)
-              return <article className="direction-card" key={service.id}>
-                <div className="direction-card-top"><Icon size={26} strokeWidth={1.6} /></div>
-                <h3>{translation.title}</h3>
-                <p>{translation.summary}</p>
-                <Link to={`/services/${service.slug}`} aria-label={translation.title}><ArrowRight size={19} /></Link>
+              const image = entryImage(service)
+              return <article className={`direction-card direction-service-card${image ? ' has-image' : ''}`} key={service.id}>
+                {image ? <Link className="direction-card-media" to={`/services/${service.slug}`} aria-label={translation.title}>
+                  <img src={image.url} alt={image.alt?.[locale] || translation.title} loading="lazy" />
+                  <span className="direction-card-media-shade" />
+                </Link> : null}
+                <div className="direction-card-content">
+                  <div className="direction-card-top"><Icon size={26} strokeWidth={1.6} /></div>
+                  <h3>{translation.title}</h3>
+                  <p>{translation.summary}</p>
+                  <Link className="direction-card-link" to={`/services/${service.slug}`} aria-label={translation.title}><ArrowRight size={19} /></Link>
+                </div>
               </article>
             }) : copy.directions.items.map((item, index) => {
               const Icon = directionIcons[index % directionIcons.length]
@@ -256,7 +263,7 @@ export function HomePage({ copy, locale }: { copy: SiteCopy; locale: Locale }) {
 
       {projects.length ? <section className="section home-projects-section">
         <div className="container">
-          <div className="section-heading home-section-heading-row">
+          <div className="section-heading home-section-heading-row home-projects-heading">
             <div><Eyebrow>{copy.homeContent.projectsEyebrow}</Eyebrow><h2>{copy.homeContent.projectsTitle}</h2></div>
             <Link className="text-link" to="/projects">{copy.homeContent.projectsAction}<ArrowRight /></Link>
           </div>
