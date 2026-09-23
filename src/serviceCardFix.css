@@ -1,0 +1,8 @@
+.direction-service-card > a.direction-card-media {
+  width: 100%;
+  max-width: none;
+  display: block;
+  margin: 0;
+  border: 0;
+  color: inherit;
+}
